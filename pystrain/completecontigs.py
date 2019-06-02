@@ -5,34 +5,33 @@ importlib.reload(sequence)
 importlib.reload(coords)
 
 
-testcoords = coords.readCoordFile("tests/out.coords")
-ref = sequence.readFastaFile("tests/73.20100900_E3D.15.fna")
-query = sequence.readFastaFile("tests/r2.parent.d77.174_unicyc.fna")
+# testcoords = coords.readCoordFile("tests/out.coords")
+# ref = sequence.readFastaFile("tests/73.20100900_E3D.15.fna")
+# query = sequence.readFastaFile("tests/r2.parent.d77.174_unicyc.fna")
 
-ref_dict = {}
-for seq in ref:
-    ref_dict[seq.name] = seq
+#
+#
+# ref_dict = {}
+# for seq in ref:
+#     ref_dict[seq.name] = seq
+#
+# query_dict = {}
+# for seq in query:
+#     query_dict[seq.name] = seq
 
-query_dict = {}
-for seq in query:
-    query_dict[seq.name] = seq
+assembly_coords = coords.readCoordFile("tests/test_assemblies.coords")
+bin_coords = coords.readCoordFile("tests/test_bins.coords")
 
-def buildContigs(contig_coords):
+def buildContigs(assemblyCoords, binCoords):
     # tag_dict = {}
-    new_seq_dict = {}
-    for contig in contig_coords.contigs:
-        # if contig_coords.source[contig] == 'r':
-        #     print(contig)
-        found_in = 0
-        contains = 0
-        for entry in contig_coords.generate(contig):
-            print(entry)
-            if entry.r_len > entry.q_len:
-                contains += 1
-            else:
-                found_in += 1
-        break
+    contig_occ = {}
+    for contig in assemblyCoords.contigs:
+        if assemblyCoords.source[contig] == 'r':
+            for entry in assemblyCoords.generate(contig):
+                if entry.q_tag in binCoords.contigs.keys() and entry.r_tag not in binCoords.contigs.keys():
+                    print(entry)
 
-buildContigs(testcoords)
+
+buildContigs(assembly_coords, bin_coords)
 
 

@@ -2,6 +2,7 @@
 import string, sys, re, math, os, array
 import numpy
 import pystrain.ival as ival
+import pystrain.sequence as sequence
 
 
 class nucmerCoords(object):
@@ -59,9 +60,11 @@ class nucmerCoords(object):
 
 class coordFile():
 
-    def __init__(self, entries):
+    def __init__(self, entries, reference_path, query_path):
         self.source = dict()
         self.contigs = dict()
+        self.reference = sequence.readFastaFile(reference_path)
+        self.query = sequence.readFastaFile(query_path)
         for entry in entries:
             # check if the ref contig has been seen before
             ref_tree = self.contigs.get(entry.r_tag)
@@ -184,15 +187,24 @@ def readCoordFile(filename):
     batch = '' # a batch of rows including one or more complete FASTA entries
     rowcnt = 0
     start = False
+    file_line = True
+    ref_path = None
+    query_path = None
     for row in fh:
         row = row.strip()
-        if row.startswith('===='):
+        if file_line:
+            row = row.strip().split()
+            ref_path = row[0]
+            query_path = row[1]
+            file_line = False
+
+        elif row.startswith('===='):
             start = True
         elif start is True:
             row = ''.join(row.split('|')).split()
             coordlist.append(nucmerCoords(row))
     fh.close()
-    coords_file = coordFile(coordlist)
+    coords_file = coordFile(coordlist, ref_path, query_path)
     return coords_file
 
 if __name__=='__main__':
