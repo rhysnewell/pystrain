@@ -1,6 +1,6 @@
-tests/ref_assembly.fna tests/query_assembly.fna
+tests/ref.fna tests/query.fna
 NUCMER
 
-    [S1]     [E1]  |     [S2]     [E2]  |  [LEN 1]  [LEN 2]  |  [% IDY]  |  [LEN R]  [LEN Q]  |  [COV R]  [COV Q]  | [TAGS]
+    [S1]     [E1]  |     [S2]     [E2]  |  [LEN 1]  [LEN 2]  |  [% IDY]  |  [LEN R]  [LEN Q]  |  [COV R]  [COV Q]  |  [TAGS]
 ===============================================================================================================================
-       1    65820  |    65820        1  |    65820    65820  |    99.99  |    70272   172561  |    93.66    38.14  | 73.20100900_E3D.15_contig_8621	1
+       1   100000  |        1   100000  |   100000   100000  |   100.00  |  100000  200000  |  100.00 50.00  |  ref_contig1  query_contig1

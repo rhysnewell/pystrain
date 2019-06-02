@@ -63,8 +63,17 @@ class coordFile():
     def __init__(self, entries, reference_path, query_path):
         self.source = dict()
         self.contigs = dict()
-        self.reference = sequence.readFastaFile(reference_path)
-        self.query = sequence.readFastaFile(query_path)
+
+        self.reference = dict()
+        reference = sequence.readFastaFile(reference_path)
+        for refSeq in reference:
+            self.reference[refSeq.name] = refSeq
+
+        self.query = dict()
+        query = sequence.readFastaFile(query_path)
+        for queSeq in query:
+            self.query[queSeq.name] = queSeq
+
         for entry in entries:
             # check if the ref contig has been seen before
             ref_tree = self.contigs.get(entry.r_tag)

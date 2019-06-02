@@ -143,11 +143,9 @@ class Sequence(object):
             fasta = '>' + self.info + '\n'
         else:
             fasta = '>' + self.name + ' ' + self.info + '\n'
-        data = ''.join(self.sequence)
-        nlines = int(math.ceil((len(self.sequence) - 1) / 60 + 1))
-        for i in range(nlines):
-            lineofseq = ''.join(data[i*60 : (i+1)*60]) + '\n'
-            fasta += lineofseq
+        fasta += ''.join(self.sequence)
+        fasta += '\n'
+
         return fasta
     
     def count(self, findme = None):
