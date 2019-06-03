@@ -23,21 +23,21 @@ class nucmerCoords(object):
     q_tag = None
 
     def __init__(self, entry):
-        self.s1_start = int(entry[0])
-        self.s1_end = int(entry[1])
+        self.s1_start = int(entry[0])-1
+        self.s1_end = int(entry[1])-1
         if self.s1_start > self.s1_end:
             self.s1_strand = '-'
-            self.s1_start = int(entry[1])
-            self.s1_end = int(entry[0])
+            self.s1_start = int(entry[1])-1
+            self.s1_end = int(entry[0])-1
         else:
             self.s1_strand = '+'
         self.s1_len = int(entry[4])
-        self.s2_start = int(entry[2])
-        self.s2_end = int(entry[3])
+        self.s2_start = int(entry[2])-1
+        self.s2_end = int(entry[3])-1
         if self.s2_start > self.s2_end:
             self.s2_strand = '-'
-            self.s2_start = int(entry[3])
-            self.s2_end = int(entry[2])
+            self.s2_start = int(entry[3])-1
+            self.s2_end = int(entry[2])-1
         else:
             self.s2_strand = '+'
         self.s2_len = int(entry[5])

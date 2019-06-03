@@ -43,8 +43,10 @@ class Sequence(object):
     info =     None # Other information (free text; e.g. annotations)
     length =   None # The number of symbols that the sequence is composed of
     gappy =    None # True if the sequence has "gaps", i.e. positions that represent deletions relative another sequence
+    fragmentStart = None
+    fragmentEnd = None
     
-    def __init__(self, sequence, alphabet = None, name = '', info = '', gappy = False):
+    def __init__(self, sequence, alphabet = None, name = '', info = '', gappy = False, fragmentposition = None):
         """ Create a sequence with the sequence data. Specifying the alphabet,
         name and other information about the sequence are all optional.
         The sequence data is immutable (stored as a string).
@@ -55,7 +57,9 @@ class Sequence(object):
         >>> myseq.alphabet.symbols
         will output the standard protein alphabet:
         ['A', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'K', 'L', 'M', 'N', 'P', 'Q',
-        'R', 'S', 'T', 'V', 'W', 'Y'] """
+        'R', 'S', 'T', 'V', 'W', 'Y']
+        fragment specifies whether this sequence is a fragment of a larger sequence e.g. a contig and its input
+        should be a list with the start and end positions of the fragment e.g. [250, 1000]"""
         
         self.sequence = sequence
         
@@ -80,12 +84,21 @@ class Sequence(object):
                     break
             if self.alphabet is None:
                 raise RuntimeError('Could not identify alphabet from sequence: %s' % name)
-        
+
+
         # Store other information
         self.name = name
         self.info = info
         self.length = len(self.sequence)
         self.gappy = gappy
+
+        #define which fragment of a contig we have
+        if fragmentposition is None:
+            self.fragmentStart = 1
+            self.fragmentEnd = self.length
+        else:
+            self.fragmentStart = fragmentposition[0]
+            self.fragmentEnd = fragmentposition[1]
         
     def __len__(self):
         """ Defines what the "len" operator returns for an instance of Sequence, e.g.
@@ -188,6 +201,39 @@ class Sequence(object):
             degapped, idxs = self.getDegapped()
             idx = ''.join(degapped).find(findme)
             return idxs[idx] if idx >= 0 else -1
+
+    def connectFragment(self, newFragment):
+        """
+
+        :param newFragment: A sequence from the same contig as the original sequence
+        :return: A combined sequence
+        """
+        if self.name == newFragment.name:
+            # newFragment is before current fragment
+            if newFragment.fragmentEnd < self.fragmentStart:
+                ambiguousN = ''.join(['N']*(self.fragmentStart-newFragment.fragmentEnd-1))
+                self.sequence = newFragment.sequence + ambiguousN + self.sequence
+                self.fragmentStart = newFragment.fragmentStart
+            # newFragment is after current fragment
+            elif self.fragmentEnd < newFragment.fragmentStart:
+                ambiguousN = ''.join(['N']*(newFragment.fragmentStart-self.fragmentEnd-1))
+                self.sequence = self.sequence + ambiguousN + newFragment.sequence
+                self.fragmentEnd = newFragment.fragmentEnd
+            # newFragment is inside current sequence, so only replace ambiguous regions
+            elif self.fragmentStart < newFragment.fragmentStart and self.fragmentEnd > newFragment.fragmentEnd:
+                start = newFragment.fragmentStart - self.fragmentStart
+                end = newFragment.fragmentEnd
+                subSeq = self.sequence[start:end+1]
+                replaceSeq = ''
+                # Replace any ambiguous characters in fragment region
+                for (i, sym) in enumerate(subSeq):
+                    if sym == 'N':
+                        replaceSeq += newFragment.sequence[i]
+                    else:
+                        replaceSeq += sym
+                self.sequence = self.sequence[:start] + replaceSeq + self.sequence[end+1:]
+        else:
+            print("Sequences are from different contigs")
 
 """
 Below are some useful methods for loading data from strings and files.
