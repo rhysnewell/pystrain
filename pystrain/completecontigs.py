@@ -43,7 +43,6 @@ assembly_coords = coords.readCoordFile("tests/assembly.filter.coords")
 bin_coords = coords.readCoordFile("tests/bin.filter.coords")
 
 
-
 def buildContigs(assemblyCoords, binCoords):
     """
 
