@@ -39,7 +39,7 @@ tests()
 # for seq in query:
 #     query_dict[seq.name] = seq
 
-assembly_coords = coords.readCoordFile("tests/assembly.filter.coords")
+assembly_coords = coords.readCoordFile("tests/smallassembly.filter.coords")
 bin_coords = coords.readCoordFile("tests/bin.filter.coords")
 
 
