@@ -1,8 +1,9 @@
+#!/usr/bin/env python3
 import pystrain.coords as coords
 import pystrain.sequence as sequence
+import sys
+import glob
 import importlib
-importlib.reload(sequence)
-importlib.reload(coords)
 
 def tests():
     seq_a = sequence.Sequence('ATGCGT', name = 'contig1', fragmentposition=[0, 5])
@@ -24,7 +25,6 @@ def tests():
     # Connect fragment before original
     print(seq_b, seq_b.fragmentStart, seq_b.fragmentEnd)
 
-tests()
 # testcoords = coords.readCoordFile("tests/out.coords")
 # ref = sequence.readFastaFile("tests/73.20100900_E3D.15.fna")
 # query = sequence.readFastaFile("tests/r2.parent.d77.174_unicyc.fna")
@@ -39,11 +39,11 @@ tests()
 # for seq in query:
 #     query_dict[seq.name] = seq
 
-assembly_coords = coords.readCoordFile("tests/smallassembly.filter.coords")
-bin_coords = coords.readCoordFile("tests/bin.filter.coords")
+# assembly_coords = coords.readCoordFile("tests/smallassembly.filter.coords")
+# bin_coords = coords.readCoordFile("tests/bin.filter.coords")
 
 
-def buildContigs(assemblyCoords, binCoords):
+def buildContigs(assemblyCoords, binCoords, simple=True):
     """
 
     :param assemblyCoords: The alignment coords produced by nucmer when aligning two assemblies contigs together
@@ -58,34 +58,53 @@ def buildContigs(assemblyCoords, binCoords):
             for entry in assemblyCoords.generate(contig):
                 if entry.q_tag in binCoords.query.keys() and entry.r_tag not in binCoords.reference.keys():
                     contig_fraction = assemblyCoords.reference[entry.r_tag][entry.s1_start:entry.s1_end+1]
-
-                    try:
-                        new_ref_contigs[entry.r_tag].connectFragment(
-                            sequence.Sequence(contig_fraction,
-                                              name=entry.r_tag,
-                                              fragmentposition = [entry.s1_start, entry.s1_end]))
-                    except KeyError:
-                        new_ref_contigs[entry.r_tag] = sequence.Sequence(contig_fraction,
-                                                                         name=entry.r_tag,
-                                                                         fragmentposition = [entry.s1_start, entry.s1_end])
+                    if simple:
+                        new_ref_contigs[entry.r_tag] = assemblyCoords.reference[entry.r_tag]
+                    else:
+                        try:
+                            new_ref_contigs[entry.r_tag].connectFragment(
+                                sequence.Sequence(contig_fraction,
+                                                  name=entry.r_tag,
+                                                  fragmentposition = [entry.s1_start, entry.s1_end]))
+                        except KeyError:
+                            new_ref_contigs[entry.r_tag] = sequence.Sequence(contig_fraction,
+                                                                             name=entry.r_tag,
+                                                                             fragmentposition = [entry.s1_start, entry.s1_end])
         if assemblyCoords.source[contig] == 'q':
             for entry in assemblyCoords.generate(contig):
                 if entry.q_tag not in binCoords.query.keys() and entry.r_tag in binCoords.reference.keys():
                     contig_fraction = assemblyCoords.query[entry.q_tag][entry.s2_start:entry.s2_end+1]
-                    try:
-                        new_query_contigs[entry.q_tag].connectFragment(
-                            sequence.Sequence(contig_fraction,
-                                              name=entry.q_tag,
-                                              fragmentposition = [entry.s2_start, entry.s2_end]))
-                    except KeyError:
-                        new_query_contigs[entry.q_tag] = sequence.Sequence(contig_fraction,
-                                                                         name=entry.q_tag,
-                                                                         fragmentposition = [entry.s2_start, entry.s2_end])
-    sequence.writeFastaFile('ref_new_bin.fna', list(binCoords.reference.values())+list(new_ref_contigs.values()))
-    sequence.writeFastaFile('query_new_bin.fna', list(binCoords.query.values())+list(new_query_contigs.values()))
+                    if simple:
+                        new_query_contigs[entry.q_tag] = assemblyCoords.query[entry.q_tag]
+                    else:
+                        try:
+                            new_query_contigs[entry.q_tag].connectFragment(
+                                sequence.Sequence(contig_fraction,
+                                                  name=entry.q_tag,
+                                                  fragmentposition = [entry.s2_start, entry.s2_end]))
+                        except KeyError:
+                            new_query_contigs[entry.q_tag] = sequence.Sequence(contig_fraction,
+                                                                             name=entry.q_tag,
+                                                                             fragmentposition = [entry.s2_start, entry.s2_end])
+    sequence.writeFastaFile("new_"+binCoords.reference_name, list(binCoords.reference.values())+list(new_ref_contigs.values()))
+    sequence.writeFastaFile("new_"+binCoords.query_name, list(binCoords.query.values())+list(new_query_contigs.values()))
 
 
 
-buildContigs(assembly_coords, bin_coords)
+# buildContigs(assembly_coords, bin_coords)
 
+def twoSampleBuildContigs(assemblyCoordsFile, binCoordsDirectory):
+    binCoords = glob.glob(binCoordsDirectory+"/*.coords")
+    assembly_coords = coords.readCoordFile(assemblyCoordsFile)
+    for file in binCoords:
+        if file.endswith(".coords"):
+            bin_coords = coords.readCoordFile(file)
+            buildContigs(assembly_coords, bin_coords)
 
+if __name__ == "__main__":
+    try:
+        assembly = sys.argv[1]
+        bins = sys.argv[2]
+        twoSampleBuildContigs(assembly, bins)
+    except IndexError:
+        print("Usage: completecontigs.py <AssemblyCoords> <BinCoordsDirectory>")

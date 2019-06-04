@@ -1,0 +1,8 @@
+tests/short_ref_bin.fna tests/short_query_bin.fna
+NUCMER
+
+    [S1]     [E1]  |     [S2]     [E2]  |  [LEN 1]  [LEN 2]  |  [% IDY]  |  [LEN R]  [LEN Q]  |  [COV R]  [COV Q]  | [TAGS]
+===============================================================================================================================
+       1       49  |        1       49  |       49       49  |   100.00  |       49       49  |   100.00   100.00  | ref_contig1	query_contig1
+       1       49  |        1       49  |       49       49  |   100.00  |       49       49  |   100.00   100.00  | ref_contig2	query_contig2
+       1       49  |        1       49  |       49       49  |   100.00  |       49       49  |   100.00   100.00  | ref_contig3	query_contig3
