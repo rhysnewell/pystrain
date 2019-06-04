@@ -58,6 +58,7 @@ def buildContigs(assemblyCoords, binCoords):
             for entry in assemblyCoords.generate(contig):
                 if entry.q_tag in binCoords.query.keys() and entry.r_tag not in binCoords.reference.keys():
                     contig_fraction = assemblyCoords.reference[entry.r_tag][entry.s1_start:entry.s1_end+1]
+
                     try:
                         new_ref_contigs[entry.r_tag].connectFragment(
                             sequence.Sequence(contig_fraction,
@@ -67,11 +68,10 @@ def buildContigs(assemblyCoords, binCoords):
                         new_ref_contigs[entry.r_tag] = sequence.Sequence(contig_fraction,
                                                                          name=entry.r_tag,
                                                                          fragmentposition = [entry.s1_start, entry.s1_end])
-                    print(contig_fraction)
         if assemblyCoords.source[contig] == 'q':
             for entry in assemblyCoords.generate(contig):
                 if entry.q_tag not in binCoords.query.keys() and entry.r_tag in binCoords.reference.keys():
-                    contig_fraction = assemblyCoords.reference[entry.q_tag][entry.s2_start:entry.s2_end+1]
+                    contig_fraction = assemblyCoords.query[entry.q_tag][entry.s2_start:entry.s2_end+1]
                     try:
                         new_query_contigs[entry.q_tag].connectFragment(
                             sequence.Sequence(contig_fraction,
@@ -81,7 +81,6 @@ def buildContigs(assemblyCoords, binCoords):
                         new_query_contigs[entry.q_tag] = sequence.Sequence(contig_fraction,
                                                                          name=entry.q_tag,
                                                                          fragmentposition = [entry.s2_start, entry.s2_end])
-                    print(contig_fraction)
     sequence.writeFastaFile('ref_new_bin.fna', list(binCoords.reference.values())+list(new_ref_contigs.values()))
     sequence.writeFastaFile('query_new_bin.fna', list(binCoords.query.values())+list(new_query_contigs.values()))
 
