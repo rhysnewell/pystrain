@@ -155,7 +155,7 @@ class Sequence(object):
         if parseDefline(self.info)[0] == self.name: # this sequence was previously "parsed" and info should hold the original header
             fasta = '>' + self.info + '\n'
         else:
-            fasta = '>' + self.name + ' ' + self.info + '\n'
+            fasta = '>' + self.name.strip('_rq') + ' ' + self.info + '\n'
         fasta += ''.join(self.sequence)
         fasta += '\n'
 

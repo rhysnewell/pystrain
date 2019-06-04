@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 import pystrain.coords as coords
 import pystrain.sequence as sequence
-import sys
-import glob
+import sys, os, glob
 import importlib
 
 def tests():
@@ -43,7 +42,7 @@ def tests():
 # bin_coords = coords.readCoordFile("tests/bin.filter.coords")
 
 
-def buildContigs(assemblyCoords, binCoords, simple=True):
+def buildContigs(assemblyCoords, binCoords, simple=True, outputDirectory='./'):
     """
 
     :param assemblyCoords: The alignment coords produced by nucmer when aligning two assemblies contigs together
@@ -86,6 +85,7 @@ def buildContigs(assemblyCoords, binCoords, simple=True):
                             new_query_contigs[entry.q_tag] = sequence.Sequence(contig_fraction,
                                                                              name=entry.q_tag,
                                                                              fragmentposition = [entry.s2_start, entry.s2_end])
+    os.mkdir
     sequence.writeFastaFile("new_"+binCoords.reference_name, list(binCoords.reference.values())+list(new_ref_contigs.values()))
     sequence.writeFastaFile("new_"+binCoords.query_name, list(binCoords.query.values())+list(new_query_contigs.values()))
 
@@ -93,18 +93,22 @@ def buildContigs(assemblyCoords, binCoords, simple=True):
 
 # buildContigs(assembly_coords, bin_coords)
 
-def twoSampleBuildContigs(assemblyCoordsFile, binCoordsDirectory):
+def twoSampleBuildContigs(assemblyCoordsFile, binCoordsDirectory, outputDirectory):
     binCoords = glob.glob(binCoordsDirectory+"/*.coords")
     assembly_coords = coords.readCoordFile(assemblyCoordsFile)
     for file in binCoords:
         if file.endswith(".coords"):
             bin_coords = coords.readCoordFile(file)
-            buildContigs(assembly_coords, bin_coords)
+            buildContigs(assembly_coords, bin_coords, True, outputDirectory)
 
 if __name__ == "__main__":
     try:
         assembly = sys.argv[1]
         bins = sys.argv[2]
-        twoSampleBuildContigs(assembly, bins)
+        try:
+            output_directory = sys.argv[3]
+        except IndexError:
+            output_directory = './'
+        twoSampleBuildContigs(assembly, bins, output_directory)
     except IndexError:
         print("Usage: completecontigs.py <AssemblyCoords> <BinCoordsDirectory>")

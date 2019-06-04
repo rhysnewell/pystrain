@@ -44,17 +44,17 @@ class nucmerCoords(object):
         self.percent_id = float(entry[6])
         self.r_len = int(entry[7])
         self.r_cov = float(entry[9])
-        self.r_tag = str(entry[11])
+        self.r_tag = str(entry[11])+"_r"
         self.q_len = int(entry[8])
         self.q_cov = float(entry[10])
-        self.q_tag = str(entry[12])
+        self.q_tag = str(entry[12])+"_q"
 
     def __str__(self):
         """ Defines what should be printed when the print statement is used on a Sequence instance """
         entry = format("%d\t%d\t%s\t%d\t%d\t%s\t%d\t%d\t%.3f\t%d\t%d\t%.3f\t%.3f\t%s\t%s" %
                        (self.s1_start, self.s1_end, self.s1_strand, self.s2_start, self.s2_end, self.s2_strand,
                         self.s1_len, self.s2_len, self.percent_id, self.r_len, self.q_len, self.r_cov, self.q_cov,
-                        self.r_tag, self.q_tag))
+                        self.r_tag.strip('_r'), self.q_tag.strip('_q')))
         return entry
 
 
@@ -63,7 +63,8 @@ class coordFile():
     def __init__(self, entries, reference_path, query_path):
         self.source = dict()
         self.contigs = dict()
-        self.reference_name = '_'.join(reference_path.split('/')[-3:])
+        # self.q_contigs = dict()
+        self.reference_name = '_'.join(reference_path.split('/')[-1])
         self.reference = dict()
         reference = sequence.readFastaFile(reference_path)
         for refSeq in reference:
