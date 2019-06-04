@@ -126,4 +126,4 @@ if __name__ == "__main__":
             output_directory = './'
         twoSampleBuildContigs(assembly, bins, output_directory)
     except IndexError:
-        print("Usage: completecontigs.py <AssemblyCoords> <BinCoordsDirectory>")
+        print("Usage: completecontigs.py <AssemblyCoords> <BinCoordsDirectory> <OutputDirectory>")
