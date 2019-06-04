@@ -64,12 +64,12 @@ class coordFile():
         self.source = dict()
         self.contigs = dict()
         # self.q_contigs = dict()
-        self.reference_name = '_'.join(reference_path.split('/')[-1])
+        self.reference_name = reference_path.split('/')[-1]
         self.reference = dict()
         reference = sequence.readFastaFile(reference_path)
         for refSeq in reference:
             self.reference[refSeq.name] = refSeq
-        self.query_name = '_'.join(query_path.split('/')[-3:])
+        self.query_name = query_path.split('/')[-1]
         self.query = dict()
         query = sequence.readFastaFile(query_path)
         for queSeq in query:

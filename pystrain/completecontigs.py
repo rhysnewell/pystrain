@@ -85,9 +85,24 @@ def buildContigs(assemblyCoords, binCoords, simple=True, outputDirectory='./'):
                             new_query_contigs[entry.q_tag] = sequence.Sequence(contig_fraction,
                                                                              name=entry.q_tag,
                                                                              fragmentposition = [entry.s2_start, entry.s2_end])
-    os.mkdir
-    sequence.writeFastaFile("new_"+binCoords.reference_name, list(binCoords.reference.values())+list(new_ref_contigs.values()))
-    sequence.writeFastaFile("new_"+binCoords.query_name, list(binCoords.query.values())+list(new_query_contigs.values()))
+    try:
+        os.mkdir(outputDirectory)
+    except FileExistsError:
+        print("Overwriting existing files")
+    try:
+        os.mkdir(outputDirectory+"/querybins")
+    except FileExistsError:
+        print("Overwriting previous query bins")
+    try:
+        os.mkdir(outputDirectory + "/referencebins")
+    except FileExistsError:
+        print("Overwriting previous query bins")
+
+    sequence.writeFastaFile(outputDirectory+"/referencebins/"+"new_"+binCoords.reference_name,
+                            list(binCoords.reference.values())+list(new_ref_contigs.values()))
+
+    sequence.writeFastaFile(outputDirectory+"/querybins/"+"new_"+binCoords.query_name,
+                            list(binCoords.query.values())+list(new_query_contigs.values()))
 
 
 
