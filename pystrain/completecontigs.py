@@ -56,6 +56,7 @@ def buildContigs(assemblyCoords, binCoords, simple=True, outputDirectory='./'):
         if assemblyCoords.source[contig] == 'r':
             for entry in assemblyCoords.generate(contig):
                 if entry.q_tag in binCoords.query.keys() and entry.r_tag not in binCoords.reference.keys():
+                    print('here')
                     contig_fraction = assemblyCoords.reference[entry.r_tag][entry.s1_start:entry.s1_end+1]
                     if simple:
                         new_ref_contigs[entry.r_tag] = assemblyCoords.reference[entry.r_tag]
@@ -85,18 +86,6 @@ def buildContigs(assemblyCoords, binCoords, simple=True, outputDirectory='./'):
                             new_query_contigs[entry.q_tag] = sequence.Sequence(contig_fraction,
                                                                              name=entry.q_tag,
                                                                              fragmentposition = [entry.s2_start, entry.s2_end])
-    try:
-        os.mkdir(outputDirectory)
-    except FileExistsError:
-        print("Overwriting existing files")
-    try:
-        os.mkdir(outputDirectory+"/querybins")
-    except FileExistsError:
-        print("Overwriting previous query bins")
-    try:
-        os.mkdir(outputDirectory + "/referencebins")
-    except FileExistsError:
-        print("Overwriting previous query bins")
 
     sequence.writeFastaFile(outputDirectory+"/referencebins/"+"new_"+binCoords.reference_name,
                             list(binCoords.reference.values())+list(new_ref_contigs.values()))
@@ -111,6 +100,20 @@ def buildContigs(assemblyCoords, binCoords, simple=True, outputDirectory='./'):
 def twoSampleBuildContigs(assemblyCoordsFile, binCoordsDirectory, outputDirectory):
     binCoords = glob.glob(binCoordsDirectory+"/*.coords")
     assembly_coords = coords.readCoordFile(assemblyCoordsFile)
+
+    try:
+        os.mkdir(outputDirectory)
+    except FileExistsError:
+        print("Overwriting existing files")
+    try:
+        os.mkdir(outputDirectory+"/querybins")
+    except FileExistsError:
+        print("Overwriting previous query bins")
+    try:
+        os.mkdir(outputDirectory + "/referencebins")
+    except FileExistsError:
+        print("Overwriting previous query bins")
+
     for file in binCoords:
         if file.endswith(".coords"):
             bin_coords = coords.readCoordFile(file)

@@ -68,12 +68,12 @@ class coordFile():
         self.reference = dict()
         reference = sequence.readFastaFile(reference_path)
         for refSeq in reference:
-            self.reference[refSeq.name] = refSeq
+            self.reference[refSeq.name+"_r"] = refSeq
         self.query_name = query_path.split('/')[-1]
         self.query = dict()
         query = sequence.readFastaFile(query_path)
         for queSeq in query:
-            self.query[queSeq.name] = queSeq
+            self.query[queSeq.name+"_q"] = queSeq
 
         for entry in entries:
             # check if the ref contig has been seen before
