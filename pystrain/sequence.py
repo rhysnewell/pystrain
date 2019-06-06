@@ -208,7 +208,7 @@ class Sequence(object):
         :param newFragment: A sequence from the same contig as the original sequence
         :return: A combined sequence
         """
-        if self.name == newFragment.name:
+        if self.name == newFragment.name.strip("_qr"):
             # newFragment is before current fragment
             if newFragment.fragmentEnd < self.fragmentStart:
                 ambiguousN = ''.join(['N']*(self.fragmentStart-newFragment.fragmentEnd-1))
@@ -235,7 +235,8 @@ class Sequence(object):
                         replaceSeq += sym
                 self.sequence = self.sequence[:start] + replaceSeq + self.sequence[end+1:]
         else:
-            print("Sequences are from different contigs")
+            print("Sequences are from different contigs:")
+            print(self.name, newFragment.name)
 
 """
 Below are some useful methods for loading data from strings and files.
