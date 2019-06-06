@@ -208,7 +208,7 @@ class Sequence(object):
         :param newFragment: A sequence from the same contig as the original sequence
         :return: A combined sequence
         """
-        if self.name == newFragment.name.strip("_qr"):
+        if self.name.strip() == newFragment.name.strip():
             # newFragment is before current fragment
             if newFragment.fragmentEnd < self.fragmentStart:
                 ambiguousN = ''.join(['N']*(self.fragmentStart-newFragment.fragmentEnd-1))
@@ -223,7 +223,7 @@ class Sequence(object):
             elif self.fragmentStart < newFragment.fragmentStart and self.fragmentEnd > newFragment.fragmentEnd:
                 start = newFragment.fragmentStart - self.fragmentStart
                 end = newFragment.fragmentEnd
-                subSeq = self.sequence[start:end+1]
+                subSeq = self.sequence[start:end]
                 replaceSeq = ''
                 # Replace any ambiguous characters in fragment region
                 if len(subSeq) != len(newFragment.sequence):

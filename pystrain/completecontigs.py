@@ -115,6 +115,7 @@ def twoSampleBuildContigs(assemblyCoordsFile, binCoordsDirectory, outputDirector
 
     for file in binCoords:
         if file.endswith(".coords"):
+            print("Working on: ", file)
             bin_coords = coords.readCoordFile(file)
             buildContigs(assembly_coords, bin_coords, True, outputDirectory)
 
