@@ -226,6 +226,8 @@ class Sequence(object):
                 subSeq = self.sequence[start:end+1]
                 replaceSeq = ''
                 # Replace any ambiguous characters in fragment region
+                if len(subSeq) != len(newFragment.sequence):
+                    print("differing sequence lengths?", len(subSeq), len(newFragment.sequence))
                 for (i, sym) in enumerate(subSeq):
                     if sym == 'N':
                         replaceSeq += newFragment.sequence[i]
