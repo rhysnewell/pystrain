@@ -5,25 +5,33 @@ import sys, os, glob
 import importlib
 
 def tests():
-    seq_a = sequence.Sequence('ATGCGT', name = 'contig1', fragmentposition=[0, 5])
+    seq_a = sequence.Sequence('ATGCGT', name = 'contig1', fragmentposition=[1, 6])
     print(seq_a, seq_a.fragmentStart, seq_a.fragmentEnd)
-    seq_b = sequence.Sequence('GCGAGT', name = 'contig1', fragmentposition=[12, 17])
+    seq_b = sequence.Sequence('GCGAGT', name = 'contig1', fragmentposition=[13, 18])
     seq_a.connectFragment(seq_b)
     # Connect fragment after original
     print(seq_a, seq_a.fragmentStart, seq_a.fragmentEnd)
     # Wrong contig
-    seq_c = sequence.Sequence('CCCCCC', name = 'cotnig1', fragmentposition=[6, 11])
+    seq_c = sequence.Sequence('CCCCCC', name = 'cotnig1', fragmentposition=[7, 12])
     seq_a.connectFragment(seq_c)
-    seq_c = sequence.Sequence('CCCCCC', name = 'contig1', fragmentposition=[6, 11])
+    seq_c = sequence.Sequence('CCCCCC', name = 'contig1', fragmentposition=[7, 12])
     seq_a.connectFragment(seq_c)
     # Substitute fragment in centre
     print(seq_a, seq_a.fragmentStart, seq_a.fragmentEnd)
-    seq_a = sequence.Sequence('ATGCGT', name='contig1', fragmentposition=[0, 5])
-    seq_b = sequence.Sequence('GCGAGT', name='contig1', fragmentposition=[12, 17])
+    seq_a = sequence.Sequence('ATGCGT', name='contig1', fragmentposition=[1, 6])
+    seq_b = sequence.Sequence('GCGAGT', name='contig1', fragmentposition=[13, 18], percentid=97.1)
     seq_b.connectFragment(seq_a)
     # Connect fragment before original
+    print(seq_b, seq_b.fragmentStart, seq_b.fragmentEnd, seq_b.percentIdentity)
+    seq_c = sequence.Sequence('CCC', name='contig1', fragmentposition=[5, 7], percentid=97.2)
+    seq_b.connectFragment(seq_c)
+    print(seq_b, seq_b.fragmentStart, seq_b.fragmentEnd, seq_b.percentIdentity)
+    seq_c = sequence.Sequence('TTT', name='contig1', fragmentposition=[10, 12])
+    seq_b.connectFragment(seq_c)
     print(seq_b, seq_b.fragmentStart, seq_b.fragmentEnd)
 
+
+tests()
 # testcoords = coords.readCoordFile("tests/out.coords")
 # ref = sequence.readFastaFile("tests/73.20100900_E3D.15.fna")
 # query = sequence.readFastaFile("tests/r2.parent.d77.174_unicyc.fna")
@@ -42,7 +50,7 @@ def tests():
 # bin_coords = coords.readCoordFile("tests/bin.filter.coords")
 
 
-def buildContigs(assemblyCoords, binCoords, simple=False, outputDirectory='./'):
+def buildContigs(assemblyCoords, binCoords, simple=True, outputDirectory='./'):
     """
 
     :param assemblyCoords: The alignment coords produced by nucmer when aligning two assemblies contigs together
@@ -57,34 +65,38 @@ def buildContigs(assemblyCoords, binCoords, simple=False, outputDirectory='./'):
             for entry in assemblyCoords.generate(contig):
                 if entry.q_tag in binCoords.query.keys() and entry.r_tag not in binCoords.reference.keys():
                     contig_fraction = assemblyCoords.reference[entry.r_tag][entry.s1_start:entry.s1_end+1]
-                    if simple and entry.percent_id >= 90 and entry.r_cov >= 50:
+                    if simple and entry.percent_id >= 95 and entry.s1_len >= 2000:
                         new_ref_contigs[entry.r_tag] = assemblyCoords.reference[entry.r_tag]
                     else:
                         try:
                             new_ref_contigs[entry.r_tag].connectFragment(
                                 sequence.Sequence(contig_fraction,
                                                   name=entry.r_tag,
-                                                  fragmentposition = [entry.s1_start, entry.s1_end]))
+                                                  fragmentposition = [entry.s1_start, entry.s1_end],
+                                                  percentid = entry.percent_id))
                         except KeyError:
                             new_ref_contigs[entry.r_tag] = sequence.Sequence(contig_fraction,
                                                                              name=entry.r_tag,
-                                                                             fragmentposition = [entry.s1_start, entry.s1_end])
+                                                                             fragmentposition = [entry.s1_start, entry.s1_end],
+                                                                             percentid = entry.percent_id)
         if assemblyCoords.source[contig] == 'q':
             for entry in assemblyCoords.generate(contig):
                 if entry.q_tag not in binCoords.query.keys() and entry.r_tag in binCoords.reference.keys():
                     contig_fraction = assemblyCoords.query[entry.q_tag][entry.s2_start:entry.s2_end+1]
-                    if simple and entry.percent_id >= 90 and entry.q_cov >= 50:
+                    if simple and entry.percent_id >= 95 and entry.s2_len >= 2000:
                         new_query_contigs[entry.q_tag] = assemblyCoords.query[entry.q_tag]
                     else:
                         try:
                             new_query_contigs[entry.q_tag].connectFragment(
                                 sequence.Sequence(contig_fraction,
                                                   name=entry.q_tag,
-                                                  fragmentposition = [entry.s2_start, entry.s2_end]))
+                                                  fragmentposition=[entry.s2_start, entry.s2_end],
+                                                  percentid=entry.percent_id))
                         except KeyError:
                             new_query_contigs[entry.q_tag] = sequence.Sequence(contig_fraction,
-                                                                             name=entry.q_tag,
-                                                                             fragmentposition = [entry.s2_start, entry.s2_end])
+                                                                               name=entry.q_tag,
+                                                                               fragmentposition = [entry.s2_start, entry.s2_end],
+                                                                               percentid=entry.percent_id)
 
     sequence.writeFastaFile(outputDirectory+"/referencebins/"+"new_"+binCoords.reference_name,
                             list(binCoords.reference.values())+list(new_ref_contigs.values()))

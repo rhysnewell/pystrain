@@ -45,8 +45,10 @@ class Sequence(object):
     gappy =    None # True if the sequence has "gaps", i.e. positions that represent deletions relative another sequence
     fragmentStart = None
     fragmentEnd = None
+    percentIdentity = None
     
-    def __init__(self, sequence, alphabet = None, name = '', info = '', gappy = False, fragmentposition = None):
+    def __init__(self, sequence, alphabet = None, name = '', info = '',
+                 gappy = False, fragmentposition = None, percentid = None):
         """ Create a sequence with the sequence data. Specifying the alphabet,
         name and other information about the sequence are all optional.
         The sequence data is immutable (stored as a string).
@@ -99,6 +101,11 @@ class Sequence(object):
         else:
             self.fragmentStart = fragmentposition[0]
             self.fragmentEnd = fragmentposition[1]
+
+        if percentid is None:
+            self.percentIdentity = 100
+        else:
+            self.percentIdentity = percentid
         
     def __len__(self):
         """ Defines what the "len" operator returns for an instance of Sequence, e.g.
@@ -222,17 +229,27 @@ class Sequence(object):
             # newFragment is inside current sequence, so only replace ambiguous regions
             elif self.fragmentStart < newFragment.fragmentStart and self.fragmentEnd > newFragment.fragmentEnd:
                 start = newFragment.fragmentStart - self.fragmentStart
-                end = newFragment.fragmentEnd
-                subSeq = self.sequence[start:end]
+                end = newFragment.fragmentEnd - self.fragmentStart
+                subSeq = self.sequence[start:end+1]
                 replaceSeq = ''
+                replacement_cnt = 0
+
                 # Replace any ambiguous characters in fragment region
                 if len(subSeq) != len(newFragment.sequence):
                     print("differing sequence lengths?", len(subSeq), len(newFragment.sequence))
                 for (i, sym) in enumerate(subSeq):
                     if sym == 'N':
                         replaceSeq += newFragment.sequence[i]
+                        replacement_cnt += 1
                     else:
-                        replaceSeq += sym
+                        if self.percentIdentity >= newFragment.percentIdentity:
+                            replaceSeq += sym
+                        else:
+                            replaceSeq += newFragment.sequence[i]
+                            replacement_cnt += 1
+
+                self.percentIdentity = (self.percentIdentity+newFragment.percentIdentity)/2
+                print(self.sequence[:start], replaceSeq, self.sequence[end+1:])
                 self.sequence = self.sequence[:start] + replaceSeq + self.sequence[end+1:]
         else:
             print("Sequences are from different contigs:")
