@@ -249,8 +249,8 @@ class Sequence(object):
                             replacement_cnt += 1
 
                 self.percentIdentity = (self.percentIdentity+newFragment.percentIdentity)/2
-                print(self.sequence[:start], replaceSeq, self.sequence[end+1:])
-                self.sequence = self.sequence[:start] + replaceSeq + self.sequence[end+1:]
+                print("".join(self.sequence[:start]), replaceSeq, "".join(self.sequence[end+1:]))
+                self.sequence = "".join(self.sequence[:start]) + replaceSeq + "".join(self.sequence[end+1:])
         else:
             print("Sequences are from different contigs:")
             print(self.name, newFragment.name)

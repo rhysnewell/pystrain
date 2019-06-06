@@ -65,8 +65,9 @@ def buildContigs(assemblyCoords, binCoords, simple=True, outputDirectory='./'):
             for entry in assemblyCoords.generate(contig):
                 if entry.q_tag in binCoords.query.keys() and entry.r_tag not in binCoords.reference.keys():
                     contig_fraction = assemblyCoords.reference[entry.r_tag][entry.s1_start:entry.s1_end+1]
-                    if simple and entry.percent_id >= 95 and entry.s1_len >= 2000:
-                        new_ref_contigs[entry.r_tag] = assemblyCoords.reference[entry.r_tag]
+                    if simple:
+                        if entry.percent_id >= 95 and entry.s1_len >= 2000:
+                            new_ref_contigs[entry.r_tag] = assemblyCoords.reference[entry.r_tag]
                     else:
                         try:
                             new_ref_contigs[entry.r_tag].connectFragment(
@@ -83,8 +84,9 @@ def buildContigs(assemblyCoords, binCoords, simple=True, outputDirectory='./'):
             for entry in assemblyCoords.generate(contig):
                 if entry.q_tag not in binCoords.query.keys() and entry.r_tag in binCoords.reference.keys():
                     contig_fraction = assemblyCoords.query[entry.q_tag][entry.s2_start:entry.s2_end+1]
-                    if simple and entry.percent_id >= 95 and entry.s2_len >= 2000:
-                        new_query_contigs[entry.q_tag] = assemblyCoords.query[entry.q_tag]
+                    if simple:
+                        if entry.percent_id >= 95 and entry.s2_len >= 2000:
+                            new_query_contigs[entry.q_tag] = assemblyCoords.query[entry.q_tag]
                     else:
                         try:
                             new_query_contigs[entry.q_tag].connectFragment(
