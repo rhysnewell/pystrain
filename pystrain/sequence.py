@@ -208,7 +208,7 @@ class Sequence(object):
         :param newFragment: A sequence from the same contig as the original sequence
         :return: A combined sequence
         """
-        if self.name.strip() == newFragment.name.strip():
+        if self.name.strip().strip('_qr') == newFragment.name.strip().strip('_qr'):
             # newFragment is before current fragment
             if newFragment.fragmentEnd < self.fragmentStart:
                 ambiguousN = ''.join(['N']*(self.fragmentStart-newFragment.fragmentEnd-1))
