@@ -131,7 +131,8 @@ def twoSampleBuildContigs(assemblyCoordsFile, binCoordsDirectory, outputDirector
         if file.endswith(".coords"):
             print("Working on: ", file)
             bin_coords = coords.readCoordFile(file)
-            buildContigs(assembly_coords, bin_coords, True, outputDirectory)
+            buildContigs(assembly_coords, bin_coords, False, outputDirectory)
+    print("done!")
 
 if __name__ == "__main__":
     try:
