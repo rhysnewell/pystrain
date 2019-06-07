@@ -69,17 +69,18 @@ def buildContigs(assemblyCoords, binCoords, simple=True, outputDirectory='./'):
                         if entry.percent_id >= 95 and entry.s1_len >= 2000:
                             new_ref_contigs[entry.r_tag] = assemblyCoords.reference[entry.r_tag]
                     else:
-                        try:
-                            new_ref_contigs[entry.r_tag].connectFragment(
-                                sequence.Sequence(contig_fraction,
-                                                  name=entry.r_tag,
-                                                  fragmentposition = [entry.s1_start, entry.s1_end],
-                                                  percentid = entry.percent_id))
-                        except KeyError:
-                            new_ref_contigs[entry.r_tag] = sequence.Sequence(contig_fraction,
-                                                                             name=entry.r_tag,
-                                                                             fragmentposition = [entry.s1_start, entry.s1_end],
-                                                                             percentid = entry.percent_id)
+                        if entry.percent_id >= 90:
+                            try:
+                                new_ref_contigs[entry.r_tag].connectFragment(
+                                    sequence.Sequence(contig_fraction,
+                                                      name=entry.r_tag,
+                                                      fragmentposition = [entry.s1_start, entry.s1_end],
+                                                      percentid = entry.percent_id))
+                            except KeyError:
+                                new_ref_contigs[entry.r_tag] = sequence.Sequence(contig_fraction,
+                                                                                 name=entry.r_tag,
+                                                                                 fragmentposition = [entry.s1_start, entry.s1_end],
+                                                                                 percentid = entry.percent_id)
         if assemblyCoords.source[contig] == 'q':
             for entry in assemblyCoords.generate(contig):
                 if entry.q_tag not in binCoords.query.keys() and entry.r_tag in binCoords.reference.keys():
@@ -88,17 +89,18 @@ def buildContigs(assemblyCoords, binCoords, simple=True, outputDirectory='./'):
                         if entry.percent_id >= 95 and entry.s2_len >= 2000:
                             new_query_contigs[entry.q_tag] = assemblyCoords.query[entry.q_tag]
                     else:
-                        try:
-                            new_query_contigs[entry.q_tag].connectFragment(
-                                sequence.Sequence(contig_fraction,
-                                                  name=entry.q_tag,
-                                                  fragmentposition=[entry.s2_start, entry.s2_end],
-                                                  percentid=entry.percent_id))
-                        except KeyError:
-                            new_query_contigs[entry.q_tag] = sequence.Sequence(contig_fraction,
-                                                                               name=entry.q_tag,
-                                                                               fragmentposition = [entry.s2_start, entry.s2_end],
-                                                                               percentid=entry.percent_id)
+                        if entry.percent_id >= 90:
+                            try:
+                                new_query_contigs[entry.q_tag].connectFragment(
+                                    sequence.Sequence(contig_fraction,
+                                                      name=entry.q_tag,
+                                                      fragmentposition=[entry.s2_start, entry.s2_end],
+                                                      percentid=entry.percent_id))
+                            except KeyError:
+                                new_query_contigs[entry.q_tag] = sequence.Sequence(contig_fraction,
+                                                                                   name=entry.q_tag,
+                                                                                   fragmentposition = [entry.s2_start, entry.s2_end],
+                                                                                   percentid=entry.percent_id)
 
     sequence.writeFastaFile(outputDirectory+"/referencebins/"+"new_"+binCoords.reference_name,
                             list(binCoords.reference.values())+list(new_ref_contigs.values()))
