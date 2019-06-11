@@ -31,7 +31,7 @@ def tests():
     print(seq_b, seq_b.fragmentStart, seq_b.fragmentEnd)
 
 
-tests()
+# tests()
 # testcoords = coords.readCoordFile("tests/out.coords")
 # ref = sequence.readFastaFile("tests/73.20100900_E3D.15.fna")
 # query = sequence.readFastaFile("tests/r2.parent.d77.174_unicyc.fna")
@@ -149,6 +149,6 @@ if __name__ == "__main__":
         except IndexError:
             simple = True
 
-        twoSampleBuildContigs(assembly, bins, output_directory, min_length, min_match, simple)
+        twoSampleBuildContigs(assembly, bins, output_directory, float(min_length), float(min_match), simple)
     except IndexError:
         print("Usage: completecontigs.py <AssemblyCoords> <BinCoordsDirectory> <OutputDirectory> <MinimumMatchLength> <MinimumMatchID> <ComplexMode>")
