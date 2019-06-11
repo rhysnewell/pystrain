@@ -50,7 +50,7 @@ tests()
 # bin_coords = coords.readCoordFile("tests/bin.filter.coords")
 
 
-def buildContigs(assemblyCoords, binCoords, simple=True, outputDirectory='./'):
+def buildContigs(assemblyCoords, binCoords, simple=True, outputDirectory='./', min_length = 2000, min_id = 85):
     """
 
     :param assemblyCoords: The alignment coords produced by nucmer when aligning two assemblies contigs together
@@ -66,10 +66,10 @@ def buildContigs(assemblyCoords, binCoords, simple=True, outputDirectory='./'):
                 if entry.q_tag in binCoords.query.keys() and entry.r_tag not in binCoords.reference.keys():
                     contig_fraction = assemblyCoords.reference[entry.r_tag][entry.s1_start:entry.s1_end+1]
                     if simple:
-                        if entry.percent_id >= 95 and entry.s1_len >= 2000:
+                        if entry.percent_id >= min_id and entry.s1_len >= min_length:
                             new_ref_contigs[entry.r_tag] = assemblyCoords.reference[entry.r_tag]
                     else:
-                        if entry.percent_id >= 90:
+                        if entry.percent_id >= min_id:
                             try:
                                 new_ref_contigs[entry.r_tag].connectFragment(
                                     sequence.Sequence(contig_fraction,
@@ -86,10 +86,10 @@ def buildContigs(assemblyCoords, binCoords, simple=True, outputDirectory='./'):
                 if entry.q_tag not in binCoords.query.keys() and entry.r_tag in binCoords.reference.keys():
                     contig_fraction = assemblyCoords.query[entry.q_tag][entry.s2_start:entry.s2_end+1]
                     if simple:
-                        if entry.percent_id >= 95 and entry.s2_len >= 2000:
+                        if entry.percent_id >= min_id and entry.s2_len >= min_length:
                             new_query_contigs[entry.q_tag] = assemblyCoords.query[entry.q_tag]
                     else:
-                        if entry.percent_id >= 90:
+                        if entry.percent_id >= min_id:
                             try:
                                 new_query_contigs[entry.q_tag].connectFragment(
                                     sequence.Sequence(contig_fraction,
@@ -112,7 +112,7 @@ def buildContigs(assemblyCoords, binCoords, simple=True, outputDirectory='./'):
 
 # buildContigs(assembly_coords, bin_coords)
 
-def twoSampleBuildContigs(assemblyCoordsFile, binCoordsDirectory, outputDirectory):
+def twoSampleBuildContigs(assemblyCoordsFile, binCoordsDirectory, outputDirectory, minLength, minMatch, simple):
     binCoords = glob.glob(binCoordsDirectory+"/*.coords")
     assembly_coords = coords.readCoordFile(assemblyCoordsFile)
 
@@ -133,17 +133,22 @@ def twoSampleBuildContigs(assemblyCoordsFile, binCoordsDirectory, outputDirector
         if file.endswith(".coords"):
             print("Working on: ", file)
             bin_coords = coords.readCoordFile(file)
-            buildContigs(assembly_coords, bin_coords, False, outputDirectory)
+            buildContigs(assembly_coords, bin_coords, simple, outputDirectory, minLength, minMatch)
     print("done!")
 
 if __name__ == "__main__":
     try:
         assembly = sys.argv[1]
         bins = sys.argv[2]
+        output_directory = sys.argv[3]
+        min_length = sys.argv[4]
+        min_match = sys.argv[5]
         try:
-            output_directory = sys.argv[3]
+            present = sys.argv[6]
+            simple = False
         except IndexError:
-            output_directory = './'
-        twoSampleBuildContigs(assembly, bins, output_directory)
+            simple = True
+
+        twoSampleBuildContigs(assembly, bins, output_directory, min_length, min_match, simple)
     except IndexError:
-        print("Usage: completecontigs.py <AssemblyCoords> <BinCoordsDirectory> <OutputDirectory>")
+        print("Usage: completecontigs.py <AssemblyCoords> <BinCoordsDirectory> <OutputDirectory> <MinimumMatchLength> <MinimumMatchID> <ComplexMode>")
