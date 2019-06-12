@@ -45,11 +45,12 @@ def readCheckMQAFile(filename):
     with open(filename) as fh:
         for row in fh:
             row = row.strip()
-            if start == 2:
+            if row.startswith('------'):
+                start += 1
+            elif start == 2:
                 row = ''.join(row.split('|')).split()
                 qalist.append(qaResult(row))
-            elif row.startswith('------'):
-                start += 1
+
 
     qa_file = qaFile(qalist)
     return qa_file
