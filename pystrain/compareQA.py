@@ -52,9 +52,9 @@ def compareQA(original, new):
     print("bin\tcompleteness_increase\tcontamination_increase\theterogenity_increase")
     for bin in original.bins.keys():
         if bin in new.bins.keys():
-            print("%s\t%.3f\t%.3f\t%.3f" % (bin, (new[bin].completeness - original[bin].completeness),
-                                            (new[bin].contamination - original[bin].contamination),
-                                            (new[bin].heterogeneity - original[bin].heterogeneity)))
+            print("%s\t%.3f\t%.3f\t%.3f" % (bin, (new.bins[bin].completeness - original.bins[bin].completeness),
+                                            (new.bins[bin].contamination - original.bins[bin].contamination),
+                                            (new.bins[bin].heterogeneity - original.bins[bin].heterogeneity)))
 
 if __name__=="__main__":
     try:
