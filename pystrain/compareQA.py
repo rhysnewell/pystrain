@@ -10,9 +10,9 @@ class qaResult(object):
 
     def __init__(self, entry):
         self.bin = entry[0].strip('new_')
-        self.completeness = float(entry[11])
-        self.contamination = float(entry[12])
-        self.heterogeneity = float(entry[13])
+        self.completeness = float(entry[12])
+        self.contamination = float(entry[13])
+        self.heterogeneity = float(entry[14])
 
 
     def __str__(self):
