@@ -69,7 +69,7 @@ def buildContigs(assemblyCoords, binCoords, simple=True, outputDirectory='./', m
                         if entry.percent_id >= min_id and entry.s1_len >= min_length:
                             new_ref_contigs[entry.r_tag] = assemblyCoords.reference[entry.r_tag]
                     else:
-                        if entry.percent_id >= min_id:
+                        if entry.percent_id >= min_id and entry.s1_len >= min_length:
                             try:
                                 new_ref_contigs[entry.r_tag].connectFragment(
                                     sequence.Sequence(contig_fraction,
@@ -90,7 +90,7 @@ def buildContigs(assemblyCoords, binCoords, simple=True, outputDirectory='./', m
                         if entry.percent_id >= min_id and entry.s2_len >= min_length:
                             new_query_contigs[entry.q_tag] = assemblyCoords.query[entry.q_tag]
                     else:
-                        if entry.percent_id >= min_id:
+                        if entry.percent_id >= min_id and entry.s2_len >= min_length:
                             try:
                                 new_query_contigs[entry.q_tag].connectFragment(
                                     sequence.Sequence(contig_fraction,
@@ -110,9 +110,6 @@ def buildContigs(assemblyCoords, binCoords, simple=True, outputDirectory='./', m
     sequence.writeFastaFile(outputDirectory+"/querybins/"+"new_"+binCoords.query_name,
                             list(binCoords.query.values())+list(new_query_contigs.values()))
 
-
-
-# buildContigs(assembly_coords, bin_coords)
 
 def twoSampleBuildContigs(assemblyCoordsFile, binCoordsDirectory, outputDirectory, minLength, minMatch, simple):
     binCoords = glob.glob(binCoordsDirectory+"/*.coords")
@@ -137,6 +134,7 @@ def twoSampleBuildContigs(assemblyCoordsFile, binCoordsDirectory, outputDirector
             bin_coords = coords.readCoordFile(file)
             buildContigs(assembly_coords, bin_coords, simple, outputDirectory, minLength, minMatch)
     print("done!")
+
 
 if __name__ == "__main__":
     try:
