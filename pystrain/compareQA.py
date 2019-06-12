@@ -36,22 +36,14 @@ class qaFile():
         return n
 
 
-
-
 def readCheckMQAFile(filename):
     qalist = []
-    start = 0
 
     with open(filename) as fh:
-        for row in fh:
-            row = row.strip()
-            if row.startswith('------'):
-                start += 1
-            elif start == 2:
-                row = ''.join(row.split('|')).split()
+        for idx, row in enumerate(fh):
+            if idx != 0:
+                row = row.strip().split()
                 qalist.append(qaResult(row))
-
-
     qa_file = qaFile(qalist)
     return qa_file
 
