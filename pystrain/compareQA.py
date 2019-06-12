@@ -49,10 +49,14 @@ def readCheckMQAFile(filename):
 
 
 def compareQA(original, new):
-    print("bin\tcompleteness_increase\tcontamination_increase\theterogenity_increase")
+    print("bin\tnew_completeness\told_completeness\tnew_contamination\told_contamination\tnew_heterogeneity\told_heterogeneity\tcompleteness_increase\tcontamination_increase\theterogenity_increase")
     for bin in original.bins.keys():
         if bin in new.bins.keys():
-            print("%s\t%.3f\t%.3f\t%.3f" % (bin, (new.bins[bin].completeness - original.bins[bin].completeness),
+            print("%s\t%.3f\t%.3f\t%.3f\t%.3f\t%.3f\t%.3f\t%.3f\t%.3f\t%.3f" % (bin, new.bins[bin].completeness,
+                                                                                original.bins[bin].completeness,
+                                            new.bins[bin].contamination, original.bins[bin].contamination,
+                                            new.bins[bin].heterogeneity, original.bins[bin].heterogeneity,
+                                            (new.bins[bin].completeness - original.bins[bin].completeness),
                                             (new.bins[bin].contamination - original.bins[bin].contamination),
                                             (new.bins[bin].heterogeneity - original.bins[bin].heterogeneity)))
 
