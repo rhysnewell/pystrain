@@ -151,4 +151,4 @@ if __name__ == "__main__":
 
         twoSampleBuildContigs(assembly, bins, output_directory, float(min_length), float(min_match), simple)
     except IndexError:
-        print("Usage: completecontigs.py <AssemblyCoords> <BinCoordsDirectory> <OutputDirectory> <MinimumMatchLength> <MinimumMatchID> <ComplexMode>")
+        print("Usage: completecontigs.py <AssemblyCoords> <BinCoordsDirectory> <OutputDirectory> <MinimumMatchLength> <MinimumMatchID> [ComplexMode]")

@@ -350,26 +350,26 @@ def readFastaFile(filename, alphabet = None, ignore = False, gappy = False, pars
         If gappy is False (default), sequence cannot contain gaps,
         if True gaps are accepted and included in the resulting sequences.
         If parse_defline is False, the name will be set to everything before the first space, else parsing will be attempted."""
-    fh = open(filename)
+
     seqlist = []
-    batch = '' # a batch of rows including one or more complete FASTA entries
-    rowcnt = 0
-    for row in fh:
-        row = row.strip()
-        if len(row) > 0:
-            if row.startswith('>') and rowcnt > 0:
-                more = readFasta(batch, alphabet, ignore, gappy, parse_defline)
-                if len(more) > 0:
-                    seqlist.extend(more)
-                batch = ''
-                rowcnt = 0
-            batch += row + '\n'
-            rowcnt += 1
-    if len(batch) > 0:
-        more = readFasta(batch, alphabet, ignore, gappy, parse_defline)
-        if len(more) > 0:
-            seqlist.extend(more)
-    fh.close()
+    with open(filename) as fh:
+
+        batch = '' # a batch of rows including one or more complete FASTA entries
+        building = False
+        for idx, row in enumerate(fh):
+            row = row.strip()
+            if len(row) > 0:
+                if row.startswith('>'):
+                    if building:
+                        seqlist.append(Sequence(seq, name=name, info=info))
+                    row = row.strip('>').split()
+                    name = row[0]
+                    info = " ".join(row)
+                    seq = ''
+                    building = True
+                else:
+                    seq += row
+        seqlist.append(Sequence(seq, name=name, info=info))
     return seqlist
 
 def writeFastaFile(filename, seqs):
