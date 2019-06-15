@@ -1,6 +1,7 @@
 import shlex
 import pystrain.ival as ival
 import pystrain.fastaindex as fastaindex
+import math
 
 class vcfEntry():
 
@@ -18,7 +19,7 @@ class vcfEntry():
     '''
     def __init__(self, contig, pos, ID, ref, alt, qual, filters, info_dict):
         self.contig = contig
-        self.pos = pos
+        self.pos = int(pos)
         self.ID = ID
         self.ref = ref
         self.alt = alt
@@ -96,13 +97,85 @@ class vcfFile:
         else:
             return False
 
-    def getContigVariation(self, contig, contig_idx):
+    def getContigVariation(self, contig, contig_idx, fragment_size = 100):
+        """
+        ToDo: Need to account for how many fragment sizes are seen between variations, as there can be zero variations
+              seen in a fragment
+        :param contig:
+        :param contig_idx:
+        :param fragment_size:
+        :return:
+        """
         contig_entries = self.generate(contig)
         variation_count = 0
+        prev_var_count = 0
+        base_count = 0
+        prev_pos = 0
+        per_fragment_variations = []  # List of variations per fragment size
+        used = False
         for entry in contig_entries:
-            variation_count += 1
+            variations = findOccurrences(entry.alt, ',')
+            if len(variations) > 0:
+                prev_var_count = variation_count
+                variation_count += len(variations)+1
+            else:
+                prev_var_count = variation_count
+                variation_count += 1
+            base_count += entry.pos - prev_pos  # add the distance between previous and current position
+            # print("base_count", base_count)
+            if base_count > fragment_size:  # Position has gone over
+                per_fragment_variations.append(prev_var_count/fragment_size)  # Store previous fragment variation rate
+                # print("1", prev_pos, entry.pos)
+                variation_count -= prev_var_count  # Remove the variation count from previous fragment
+                bp_distance = (int(math.floor(entry.pos/fragment_size))*fragment_size) - (int(math.ceil((prev_pos+1)/fragment_size))*fragment_size)  # get bp distance between current fragment and previous
+                missing_fragments = bp_distance//fragment_size  # Calculate number of missing fragments
+                # print("frags", missing_fragments)
+                if missing_fragments > 0:
+                    for i in range(missing_fragments):
+                        # print("2")
+                        per_fragment_variations.append(0.00)  # Append 0 for every missing fragment
+                    prev_var_count = 0  # reset prev var count
+                base_count = entry.pos % fragment_size  # Set how far we are into current fragment
+                prev_pos = entry.pos
+                used = False
+            elif base_count == fragment_size:
+                # print("3")
+                per_fragment_variations.append(variation_count / fragment_size)
+                variation_count = 0
+                base_count = 0
+                prev_pos = entry.pos
+                used = True
+            else:
+                prev_pos = entry.pos
+                used = False
 
-        return variation_count/contig_idx.length
+
+
+        if used:
+            if contig_idx.length - int(math.ceil((prev_pos + 1) / fragment_size))*fragment_size >= fragment_size:
+                # print("4")
+                bp_distance = (int(math.floor(contig_idx.length / fragment_size)) * fragment_size) - (int(math.ceil(
+                    (prev_pos + 1) / fragment_size)) * fragment_size)  # get bp distance between current fragment and previous
+                missing_fragments = bp_distance // fragment_size  # Calculate number of missing fragments
+                if missing_fragments > 0:
+                    for i in range(missing_fragments):
+                        # print("5")
+                        per_fragment_variations.append(0.00)  # Append 0 for every missing fragment
+        else:
+            if contig_idx.length - int(math.floor((prev_pos + 1) / fragment_size))*fragment_size >= fragment_size:
+                # print("6", prev_pos, contig_idx.length)
+                per_fragment_variations.append(variation_count / fragment_size)  # Store previous fragment variation rate
+                bp_distance = (int(math.floor(contig_idx.length / fragment_size)) * fragment_size) - (int(math.ceil(
+                    (prev_pos + 1) / fragment_size)) * fragment_size)  # get bp distance between current fragment and previous
+                missing_fragments = bp_distance // fragment_size  # Calculate number of missing fragments
+                # print("frags", missing_fragments)
+                if missing_fragments > 0:
+                    for i in range(missing_fragments):
+                        # print("7")
+                        per_fragment_variations.append(0.00)  # Append 0 for every missing fragment
+
+        return per_fragment_variations
+
 
     def getIndex(self, group_attribute):
         """
@@ -117,6 +190,9 @@ class vcfFile:
                 if not entry.info_dict[group_attribute] in d: # only add the first entry for this particular value
                     d[entry.info_dict[group_attribute]] = entry
         return d
+
+def findOccurrences(s, ch):
+    return [i for i, letter in enumerate(s) if letter == ch]
 
 def readvcfFile(filename, filter_feature = None):
     """ Read a GTF/GFF/VCF file.
@@ -146,6 +222,7 @@ def readvcfFile(filename, filter_feature = None):
     
                 ref = words[3]
                 alt = words[4]
+
                 qual = words[5]
     
                 filters = words[6]
@@ -164,7 +241,7 @@ def readvcfFile(filename, filter_feature = None):
 
                 # formats = words[8]
                 # unknown = words[9]
-    
+
                 entry = vcfEntry(seqname, pos, ID, ref, alt, qual, filters, info_dict)
                 # check if the chromosome has been seen before
                 try:
@@ -204,3 +281,6 @@ if __name__ == '__main__':
     print(bf.getContigVariation('k141_1', fai.contigs['k141_1']))
     for contig in bf.contigs.keys():
         print(bf.getContigVariation(contig, fai.contigs[contig]))
+        cnt += 1
+        if cnt == 100:
+            break
