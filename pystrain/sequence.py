@@ -29,6 +29,7 @@ import numpy
 from pystrain.webservice import *
 from pystrain.sym import *
 from pystrain.prob import *
+import pystrain.ival as ival
 
 # Sequence ------------------****
 
@@ -255,6 +256,53 @@ class Sequence(object):
             print("Sequences are from different contigs:")
             print(self.name, newFragment.name)
 
+
+class fastaFile():
+    def __init__(self, fasta):
+        """
+        Create a vcfFile instance.
+        :param entries: an iterable of entries or a filename
+        """
+        if isinstance(fasta, str): # filename
+            entries = readFastaFile(fasta)
+            self.contigs = dict()
+            for entry in entries:
+                self.contigs[entry.name] = entry
+        else:
+            self.contigs = dict()
+            for entry in fasta:
+                self.contigs[entry.name] = entry
+
+    def __len__(self):
+        n = 0
+        for c in self.contigs:
+            n += len(self.contigs[c])
+        return n
+
+    def generate(self, contig):
+        entries = self.contigs.get(contig)
+        if entries != None:
+            for entry in entries:
+                yield entry
+
+    def __iter__(self):
+        self.contigqueue = ival.Stack()
+        for contig in self.contigs.keys():
+            self.contigqueue.push(self.generate(contig))
+        self.current = self.contigqueue.pop()
+        return self
+
+    def __next__(self):
+        try:
+            ret = next(self.current)
+        except StopIteration:
+            if not self.contigqueue.isEmpty():
+                self.current = self.contigqueue.pop()
+                ret = next(self.current)
+            else:
+                raise StopIteration
+        return ret
+
 """
 Below are some useful methods for loading data from strings and files.
 Recognize the FASTA format (nothing fancy).
@@ -353,7 +401,9 @@ def readFastaFile(filename, alphabet = None, ignore = False, gappy = False, pars
 
     seqlist = []
     with open(filename) as fh:
-
+        seq = ''
+        name = ''
+        info = ''
         batch = '' # a batch of rows including one or more complete FASTA entries
         building = False
         for idx, row in enumerate(fh):

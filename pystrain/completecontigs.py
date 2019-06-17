@@ -54,7 +54,7 @@ def buildContigs(assemblyCoords, binCoords, simple=True, outputDirectory='./', m
     """
 
     :param assemblyCoords: The alignment coords produced by nucmer when aligning two assemblies contigs together
-    :param binCoords:  As above, but two bins contigs
+    :param binCoords:  a metagenomic bin
     :return: Two new bin .fna files with any additional contigs that were found to be present in both samples and
     binned in one species
     """
@@ -112,7 +112,7 @@ def buildContigs(assemblyCoords, binCoords, simple=True, outputDirectory='./', m
 
 
 def twoSampleBuildContigs(assemblyCoordsFile, binCoordsDirectory, outputDirectory, minLength, minMatch, simple):
-    binCoords = glob.glob(binCoordsDirectory+"/*.coords")
+    binCoords = glob.glob(binCoordsDirectory+"/*")
     assembly_coords = coords.readCoordFile(assemblyCoordsFile)
 
     try:
@@ -129,10 +129,10 @@ def twoSampleBuildContigs(assemblyCoordsFile, binCoordsDirectory, outputDirector
         print("Overwriting previous reference bins")
 
     for file in binCoords:
-        if file.endswith(".coords"):
+        if file.endswith(".fna") or file.endswith(".fa"):
             print("Working on: ", file)
-            bin_coords = coords.readCoordFile(file)
-            buildContigs(assembly_coords, bin_coords, simple, outputDirectory, minLength, minMatch)
+            bin = sequence.readFastaFile(file)
+            buildContigs(assembly_coords, bin, simple, outputDirectory, minLength, minMatch)
     print("done!")
 
 
