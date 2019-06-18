@@ -114,7 +114,7 @@ tests()
 # bin_coords = coords.readCoordFile("tests/bin.filter.coords")
 
 
-def buildContigs(assemblyCoords, bin, simple=True, outputDirectory='./', min_length = 2000, min_id = 85):
+def buildContigs(assemblyCoords, bin, simple=True, outputDirectory='./', min_length = 2000, min_id = 85, min_cov=90):
     """
 
     :param assemblyCoords: The alignment coords produced by nucmer when aligning two assemblies contigs together
@@ -129,11 +129,11 @@ def buildContigs(assemblyCoords, bin, simple=True, outputDirectory='./', min_len
             for ref_contig in assemblyCoords.generate(query_contig.r_tag, source='r'):
                 if ref_contig.q_tag not in bin.index.keys():
                     if simple:
-                        if ref_contig.percent_id >= min_id and ref_contig.s2_len >= min_length:
+                        if ref_contig.percent_id >= min_id and ref_contig.s2_len >= min_length and ref_contig.q_cov >= min_cov:
                             new_contigs[ref_contig.q_tag] = assemblyCoords.query.fetch(ref_contig.q_tag, 1,
                                                                                        assemblyCoords.query.index[ref_contig.q_tag].rlen)
                     else:
-                        if ref_contig.percent_id >= min_id and ref_contig.s2_len >= min_length:
+                        if ref_contig.percent_id >= min_id and ref_contig.s2_len >= min_length and ref_contig.q_cov >= min_cov:
                             try:
                                 contig_fraction = assemblyCoords.query.fetch(ref_contig.q_tag,
                                                                              ref_contig.s2_start, ref_contig.s2_end)
@@ -171,7 +171,7 @@ def buildContigs(assemblyCoords, bin, simple=True, outputDirectory='./', min_len
     return new_contigs
 
 
-def twoSampleBuildContigs(assemblyCoordsFile, binCoordsDirectory, outputDirectory, minLength, minMatch, simple):
+def twoSampleBuildContigs(assemblyCoordsFile, binCoordsDirectory, outputDirectory, minLength, minMatch, minCov, simple):
     binCoords = glob.glob(binCoordsDirectory+"/*")
     assembly_coords = coords.readCoordFile(assemblyCoordsFile)
 
@@ -179,20 +179,12 @@ def twoSampleBuildContigs(assemblyCoordsFile, binCoordsDirectory, outputDirector
         os.mkdir(outputDirectory)
     except FileExistsError:
         print("Overwriting existing files")
-    try:
-        os.mkdir(outputDirectory+"/querybins")
-    except FileExistsError:
-        print("Overwriting previous query bins")
-    try:
-        os.mkdir(outputDirectory + "/referencebins")
-    except FileExistsError:
-        print("Overwriting previous reference bins")
 
     for file in binCoords:
         if file.endswith(".fna") or file.endswith(".fa"):
             print("Working on: ", file)
             bin = pyfaidx.Faidx(file)
-            new_contigs = buildContigs(assembly_coords, bin, simple, outputDirectory, minLength, minMatch)
+            new_contigs = buildContigs(assembly_coords, bin, simple, outputDirectory, minLength, minMatch, minCov)
             with open(outputDirectory + "/new_" + file.split('/')[-1], 'w') as fh:
 
                 for contig in bin.index.keys():
@@ -216,12 +208,13 @@ if __name__ == "__main__":
         output_directory = sys.argv[3]
         min_length = sys.argv[4]
         min_match = sys.argv[5]
+        min_query_cov = sys.argv[6]
         try:
-            present = sys.argv[6]
+            present = sys.argv[7]
             simple = False
         except IndexError:
             simple = True
 
-        twoSampleBuildContigs(assembly, bins, output_directory, float(min_length), float(min_match), simple)
+        twoSampleBuildContigs(assembly, bins, output_directory, float(min_length), float(min_match), float(min_query_cov), simple)
     except IndexError:
-        print("Usage: completecontigs.py <AssemblyCoords> <BinsDirectory> <OutputDirectory> <MinimumMatchLength> <MinimumMatchID> [ComplexMode]")
+        print("Usage: completecontigs.py <AssemblyCoords> <BinsDirectory> <OutputDirectory> <MinimumMatchLength> <MinimumMatchID> <MinimumQueryCoverage> [ComplexMode]")
