@@ -97,7 +97,7 @@ def tests():
 
 # tests()
 
-def binContigs(assemblyCoords, min_length=500, min_id=97, min_cov=20, min_genome_length=500000):
+def binContigs(assemblyCoords, min_length=500, min_id=97, min_cov=20, min_genome_length=50000, simple=True):
     bin_cnt = 0
     bins = {}
     for contig in assemblyCoords.query.index.keys():
@@ -112,19 +112,24 @@ def binContigs(assemblyCoords, min_length=500, min_id=97, min_cov=20, min_genome
                             continue
                     except AttributeError:
                         query_coords.seen = False
-                    try:
-                        contig_fraction = assemblyCoords.query.fetch(query_coords.q_tag,
-                                                                     query_coords.s2_start, query_coords.s2_end)
-                        contig_fraction.percentIdentity = query_coords.percent_id
-                        spool[query_coords.q_tag] = connectFragment(spool[query_coords.q_tag],
-                                                                        contig_fraction)
-                        query_coords.seen = True
-                    except KeyError:
-                        contig_fraction = assemblyCoords.query.fetch(query_coords.q_tag,
-                                                                     query_coords.s2_start, query_coords.s2_end)
-                        contig_fraction.percentIdentity = query_coords.percent_id
-                        spool[query_coords.q_tag] = contig_fraction
-                        query_coords.seen = True
+                    if simple:
+                        if query_coords.percent_id >= min_id and query_coords.s2_len >= min_length and query_coords.q_cov >= min_cov:
+                            spool[query_coords.q_tag] = assemblyCoords.query.fetch(query_coords.q_tag, 1,
+                                                                                       assemblyCoords.query.index[query_coords.q_tag].rlen)
+                    else:
+                        try:
+                            contig_fraction = assemblyCoords.query.fetch(query_coords.q_tag,
+                                                                         query_coords.s2_start, query_coords.s2_end)
+                            contig_fraction.percentIdentity = query_coords.percent_id
+                            spool[query_coords.q_tag] = connectFragment(spool[query_coords.q_tag],
+                                                                            contig_fraction)
+                            query_coords.seen = True
+                        except KeyError:
+                            contig_fraction = assemblyCoords.query.fetch(query_coords.q_tag,
+                                                                         query_coords.s2_start, query_coords.s2_end)
+                            contig_fraction.percentIdentity = query_coords.percent_id
+                            spool[query_coords.q_tag] = contig_fraction
+                            query_coords.seen = True
 
                 # Then begin search through reference contig
                 source = 'r'
@@ -142,19 +147,25 @@ def binContigs(assemblyCoords, min_length=500, min_id=97, min_cov=20, min_genome
 
                             matched = True
                             # print(entry_coords)
-                            try:
-                                contig_fraction = assemblyCoords.query.fetch(entry_coords.q_tag,
-                                                                             entry_coords.s2_start, entry_coords.s2_end)
-                                contig_fraction.percentIdentity = entry_coords.percent_id
-                                spool[entry_coords.q_tag] = connectFragment(spool[entry_coords.q_tag],
-                                                                                contig_fraction)
-                                entry_coords.seen = True
-                            except KeyError:
-                                contig_fraction = assemblyCoords.query.fetch(entry_coords.q_tag,
-                                                                             entry_coords.s2_start, entry_coords.s2_end)
-                                contig_fraction.percentIdentity = entry_coords.percent_id
-                                spool[entry_coords.q_tag] = contig_fraction
-                                entry_coords.seen = True
+                            if simple:
+                                if query_coords.percent_id >= min_id and query_coords.s2_len >= min_length and query_coords.q_cov >= min_cov:
+                                    spool[query_coords.q_tag] = assemblyCoords.query.fetch(query_coords.q_tag, 1,
+                                                                                           assemblyCoords.query.index[
+                                                                                               query_coords.q_tag].rlen)
+                            else:
+                                try:
+                                    contig_fraction = assemblyCoords.query.fetch(entry_coords.q_tag,
+                                                                                 entry_coords.s2_start, entry_coords.s2_end)
+                                    contig_fraction.percentIdentity = entry_coords.percent_id
+                                    spool[entry_coords.q_tag] = connectFragment(spool[entry_coords.q_tag],
+                                                                                    contig_fraction)
+                                    entry_coords.seen = True
+                                except KeyError:
+                                    contig_fraction = assemblyCoords.query.fetch(entry_coords.q_tag,
+                                                                                 entry_coords.s2_start, entry_coords.s2_end)
+                                    contig_fraction.percentIdentity = entry_coords.percent_id
+                                    spool[entry_coords.q_tag] = contig_fraction
+                                    entry_coords.seen = True
                             if source == 'r':
                                 tag = entry_coords.q_tag
                                 source = 'q'
