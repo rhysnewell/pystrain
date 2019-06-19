@@ -202,6 +202,7 @@ def binContigs(assemblyCoords, min_length=500, min_id=97, min_cov=5, min_genome_
     threads = []
     for contig in assemblyCoords.query.index.keys():
         spool = {}
+        print(contig)
         if assemblyCoords.query.index[contig].rlen >= min_length:
 
             for query_coords in assemblyCoords.generate(contig, source='q'):
@@ -280,13 +281,11 @@ def binContigs(assemblyCoords, min_length=500, min_id=97, min_cov=5, min_genome_
                         matched = False
                     else:
                         try:
-                            print("Stuck trying?", entry_coords)
+                            searching = False
                             if entry_coords.seen:
                                 entry_coords.seen = False
                         except AttributeError:
-                            print("Struck excepting?", entry_coords)
-                            entry_coords.seen = False
-                        searching = False
+                            searching = False
             if len("".join([seq.seq for seq in spool.values()])) >= min_genome_length:
                 bin_cnt += 1
                 # bins["bin."+str(bin_cnt)] = spool
