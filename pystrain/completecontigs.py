@@ -95,26 +95,89 @@ def tests():
     print(seq_b, seq_b.start, seq_b.end, len(seq_b))
 
 
-tests()
-# testcoords = coords.readCoordFile("tests/out.coords")
-# ref = sequence.readFastaFile("tests/73.20100900_E3D.15.fna")
-# query = sequence.readFastaFile("tests/r2.parent.d77.174_unicyc.fna")
+# tests()
 
-#
-#
-# ref_dict = {}
-# for seq in ref:
-#     ref_dict[seq.name] = seq
-#
-# query_dict = {}
-# for seq in query:
-#     query_dict[seq.name] = seq
+def binContigs(assemblyCoords, min_length=500, min_id=97, min_cov=20):
+    bin_cnt = 0
+    bins = {}
+    for contig in assemblyCoords.query.index.keys():
+        spool = {}
+        if assemblyCoords.query.index[contig].rlen >= min_length:
+            bin_cnt += 1
+            for query_coords in assemblyCoords.generate(contig, source='q'):
+                # Add in initial fragment if it is good
+                if query_coords.percent_id >= min_id and query_coords.s2_len >= min_length and query_coords.q_cov >= min_cov:
+                    try:
+                        if query_coords.seen:
+                            continue
+                    except AttributeError:
+                        query_coords.seen = False
+                    try:
+                        contig_fraction = assemblyCoords.query.fetch(query_coords.q_tag,
+                                                                     query_coords.s2_start, query_coords.s2_end)
+                        contig_fraction.percentIdentity = query_coords.percent_id
+                        spool[query_coords.q_tag] = connectFragment(spool[query_coords.q_tag],
+                                                                        contig_fraction)
+                        query_coords.seen = True
+                    except KeyError:
+                        contig_fraction = assemblyCoords.query.fetch(query_coords.q_tag,
+                                                                     query_coords.s2_start, query_coords.s2_end)
+                        contig_fraction.percentIdentity = query_coords.percent_id
+                        spool[query_coords.q_tag] = contig_fraction
+                        query_coords.seen = True
 
-# assembly_coords = coords.readCoordFile("tests/smallassembly.filter.coords")
-# bin_coords = coords.readCoordFile("tests/bin.filter.coords")
+                # Then begin search through reference contig
+                source = 'r'
+                tag = query_coords.r_tag
+                searching = True
+                matched = False
+                while searching is True:
+                    for entry_coords in assemblyCoords.generate(tag, source=source):
+                        if entry_coords.percent_id >= min_id and entry_coords.s2_len >= min_length and entry_coords.q_cov >= min_cov:
+                            try:
+                                if entry_coords.seen:
+                                    continue
+                            except AttributeError:
+                                entry_coords.seen = False
+
+                            matched = True
+                            print(entry_coords)
+                            try:
+                                contig_fraction = assemblyCoords.query.fetch(entry_coords.q_tag,
+                                                                             entry_coords.s2_start, entry_coords.s2_end)
+                                contig_fraction.percentIdentity = entry_coords.percent_id
+                                spool[entry_coords.q_tag] = connectFragment(spool[entry_coords.q_tag],
+                                                                                contig_fraction)
+                                entry_coords.seen = True
+                            except KeyError:
+                                contig_fraction = assemblyCoords.query.fetch(entry_coords.q_tag,
+                                                                             entry_coords.s2_start, entry_coords.s2_end)
+                                contig_fraction.percentIdentity = entry_coords.percent_id
+                                spool[entry_coords.q_tag] = contig_fraction
+                                entry_coords.seen = True
+                            if source == 'r':
+                                tag = entry_coords.q_tag
+                                source = 'q'
+                                break
+                            else:
+                                tag = entry_coords.r_tag
+                                source = 'r'
+                                break
+                    if matched is True:
+                        matched = False
+                    else:
+                        try:
+                            if entry_coords.seen:
+                                entry_coords.seen = False
+                        except AttributeError:
+                            entry_coords.seen = False
+                        searching = False
+            if len(spool) >= 1:
+                bins["bin."+str(bin_cnt)] = spool
+    return bins
 
 
-def buildContigs(assemblyCoords, bin, simple=True, outputDirectory='./', min_length = 2000, min_id = 85, min_cov=90):
+def buildContigs(assemblyCoords, oldBin, simple=True, outputDirectory='./', min_length = 2000, min_id = 85, min_cov=90):
     """
 
     :param assemblyCoords: The alignment coords produced by nucmer when aligning two assemblies contigs together
@@ -124,10 +187,11 @@ def buildContigs(assemblyCoords, bin, simple=True, outputDirectory='./', min_len
     """
     new_contigs = {}
     connections = {}
-    for contig in bin.index.keys():
+    for contig in oldBin.index.keys():
         for query_contig in assemblyCoords.generate(contig, source='q'):
             for ref_contig in assemblyCoords.generate(query_contig.r_tag, source='r'):
-                if ref_contig.q_tag not in bin.index.keys():
+                if ref_contig.q_tag not in oldBin.index.keys():
+                    dist = ref_contig.s1_start - query_contig.s1_end
                     if simple:
                         if ref_contig.percent_id >= min_id and ref_contig.s2_len >= min_length and ref_contig.q_cov >= min_cov:
                             new_contigs[ref_contig.q_tag] = assemblyCoords.query.fetch(ref_contig.q_tag, 1,
@@ -145,28 +209,6 @@ def buildContigs(assemblyCoords, bin, simple=True, outputDirectory='./', min_len
                                                                              ref_contig.s2_start, ref_contig.s2_end)
                                 contig_fraction.percentIdentity = ref_contig.percent_id
                                 new_contigs[ref_contig.q_tag] = contig_fraction
-        # if assemblyCoords.source[contig] == 'q':
-        #     for entry in assemblyCoords.generate(contig):
-        #         if entry.q_tag not in bin.query.keys() and entry.r_tag in bin.reference.keys():
-        #
-        #             if simple:
-        #                 if entry.percent_id >= min_id and entry.s2_len >= min_length:
-        #                     new_query_contigs[entry.q_tag] = assemblyCoords.query[entry.q_tag]
-        #             else:
-        #                 if entry.percent_id >= min_id and entry.s2_len >= min_length:
-        #                     try:
-        #                         new_query_contigs[entry.q_tag].connectFragment(
-        #                             sequence.Sequence(contig_fraction,
-        #                                               name=entry.q_tag,
-        #                                               fragmentposition=[entry.s2_start, entry.s2_end],
-        #                                               percentid=entry.percent_id))
-        #                     except KeyError:
-        #                         contig_fraction = assemblyCoords.query[entry.q_tag][entry.s2_start:entry.s2_end + 1]
-        #                         new_query_contigs[entry.q_tag] = sequence.Sequence(contig_fraction,
-        #                                                                            name=entry.q_tag,
-        #                                                                            fragmentposition = [entry.s2_start, entry.s2_end],
-        #                                                                            percentid=entry.percent_id)
-
 
     return new_contigs
 
@@ -183,12 +225,12 @@ def twoSampleBuildContigs(assemblyCoordsFile, binCoordsDirectory, outputDirector
     for file in binCoords:
         if file.endswith(".fna") or file.endswith(".fa"):
             print("Working on: ", file)
-            bin = pyfaidx.Faidx(file)
-            new_contigs = buildContigs(assembly_coords, bin, simple, outputDirectory, minLength, minMatch, minCov)
+            oldBin = pyfaidx.Faidx(file)
+            new_contigs = buildContigs(assembly_coords, oldBin, simple, outputDirectory, minLength, minMatch, minCov)
             with open(outputDirectory + "/new_" + file.split('/')[-1], 'w') as fh:
 
-                for contig in bin.index.keys():
-                    seq = bin.fetch(contig, 1, bin.index[contig].rlen)
+                for contig in oldBin.index.keys():
+                    seq = oldBin.fetch(contig, 1, oldBin.index[contig].rlen)
                     fasta = ">" + seq.name + '\n'
                     fasta += seq.seq + '\n'
                     fh.write(fasta)
@@ -200,21 +242,65 @@ def twoSampleBuildContigs(assemblyCoordsFile, binCoordsDirectory, outputDirector
 
     print("done!")
 
+def spooledBinning(assemblyCoordFile, outputDirectory,  minLength, minMatch, minCov):
+    assembly_coords = coords.readCoordFile(assemblyCoordFile)
+
+    try:
+        os.mkdir(outputDirectory)
+    except FileExistsError:
+        print("Overwriting existing files")
+
+    bins = binContigs(assembly_coords, minLength, minMatch, minCov)
+    for mag in bins.keys():
+        with open(outputDirectory + "/" + mag+".fna", 'w') as fh:
+            for contig in bins[mag].keys():
+                seq = bins[mag][contig]
+                fasta = ">" + seq.name + '\n'
+                fasta += seq.seq + '\n'
+                fh.write(fasta)
+
 
 if __name__ == "__main__":
     try:
-        assembly = sys.argv[1]
-        bins = sys.argv[2]
-        output_directory = sys.argv[3]
-        min_length = sys.argv[4]
-        min_match = sys.argv[5]
-        min_query_cov = sys.argv[6]
-        try:
-            present = sys.argv[7]
-            simple = False
-        except IndexError:
-            simple = True
+        mode = sys.argv[1]
+        if mode == 'build':
+            try:
+                assembly = sys.argv[2]
+                bins = sys.argv[3]
+                output_directory = sys.argv[4]
+                min_length = sys.argv[5]
+                min_match = sys.argv[6]
+                min_query_cov = sys.argv[7]
+                try:
+                    present = sys.argv[8]
+                    simple = False
+                except IndexError:
+                    simple = True
+                twoSampleBuildContigs(assembly, bins, output_directory, float(min_length), float(min_match),
+                                      float(min_query_cov), simple)
 
-        twoSampleBuildContigs(assembly, bins, output_directory, float(min_length), float(min_match), float(min_query_cov), simple)
+            except IndexError:
+                print(
+                    "Usage: completecontigs.py build <AssemblyCoords> <BinsDirectory> <OutputDirectory> <MinimumMatchLength> <MinimumMatchID> <MinimumQueryCoverage> [ComplexMode]")
+
+        if mode == 'bin':
+            try:
+                assembly = sys.argv[2]
+                output_directory = sys.argv[3]
+                min_length = sys.argv[4]
+                min_match = sys.argv[5]
+                min_query_cov = sys.argv[6]
+                spooledBinning(assembly, output_directory, float(min_length), float(min_match),
+                                      float(min_query_cov))
+
+            except IndexError:
+                print(
+                    "Usage: completecontigs.py bin <AssemblyCoords> <OutputDirectory> <MinimumMatchLength> <MinimumMatchID> <MinimumQueryCoverage>")
+        else:
+            print("Usage: completecontigs.py <Mode> \n"
+                  "Mode: bin OR build")
+
+
     except IndexError:
-        print("Usage: completecontigs.py <AssemblyCoords> <BinsDirectory> <OutputDirectory> <MinimumMatchLength> <MinimumMatchID> <MinimumQueryCoverage> [ComplexMode]")
+        print("Usage: completecontigs.py <Mode> \n"
+              "Mode: bin OR build")
