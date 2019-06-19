@@ -198,7 +198,7 @@ def binOnThread(assemblyCoords, contig, min_length, min_id, min_cov, min_genome_
 def binContigs(assemblyCoords, min_length=500, min_id=97, min_cov=5, min_genome_length=250000, simple=True, outputDirectory = "./", numThreads=5):
     bin_cnt = 0
     bins = {}
-    threadLock = threading.Lock()
+    # threadLock = threading.Lock()
     threads = []
     for contig in assemblyCoords.query.index.keys():
         spool = {}
@@ -280,9 +280,11 @@ def binContigs(assemblyCoords, min_length=500, min_id=97, min_cov=5, min_genome_
                         matched = False
                     else:
                         try:
+                            print("Stuck trying?", entry_coords)
                             if entry_coords.seen:
                                 entry_coords.seen = False
                         except AttributeError:
+                            print("Struck excepting?", entry_coords)
                             entry_coords.seen = False
                         searching = False
             if len("".join([seq.seq for seq in spool.values()])) >= min_genome_length:
@@ -363,7 +365,7 @@ def twoSampleBuildContigs(assemblyCoordsFile, binCoordsDirectory, outputDirector
 
     print("done!")
 
-def spooledBinning(assemblyCoordFile, outputDirectory,  minLength, minMatch, minCov):
+def spooledBinning(assemblyCoordFile, outputDirectory,  minLength, minMatch, minCov, simple):
     assembly_coords = coords.readCoordFile(assemblyCoordFile)
 
     try:
@@ -371,7 +373,7 @@ def spooledBinning(assemblyCoordFile, outputDirectory,  minLength, minMatch, min
     except FileExistsError:
         print("Overwriting existing files")
 
-    binContigs(assembly_coords, minLength, minMatch, minCov, outputDirectory=outputDirectory)
+    binContigs(assembly_coords, minLength, minMatch, minCov, outputDirectory=outputDirectory, simple=simple)
     # for mag in bins.keys():
     #     print("Working on: ", mag)
     #     with open(outputDirectory + "/" + mag+".fna", 'w') as fh:
@@ -381,6 +383,7 @@ def spooledBinning(assemblyCoordFile, outputDirectory,  minLength, minMatch, min
     #             fasta += seq.seq + '\n'
     #             fh.write(fasta)
     print("done!")
+    return
 
 
 if __name__ == "__main__":
@@ -413,12 +416,17 @@ if __name__ == "__main__":
                 min_length = sys.argv[4]
                 min_match = sys.argv[5]
                 min_query_cov = sys.argv[6]
+                try:
+                    present = sys.argv[7]
+                    simple = False
+                except IndexError:
+                    simple = True
                 spooledBinning(assembly, output_directory, float(min_length), float(min_match),
-                                      float(min_query_cov))
+                                      float(min_query_cov), simple)
 
             except IndexError:
                 print(
-                    "Usage: completecontigs.py bin <AssemblyCoords> <OutputDirectory> <MinimumMatchLength> <MinimumMatchID> <MinimumQueryCoverage>")
+                    "Usage: completecontigs.py bin <AssemblyCoords> <OutputDirectory> <MinimumMatchLength> <MinimumMatchID> <MinimumQueryCoverage> [ComplexMode]")
         else:
             print("Usage: completecontigs.py <Mode> \n"
                   "Mode: bin OR build")
