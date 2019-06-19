@@ -202,13 +202,16 @@ def binContigs(assemblyCoords, min_length=500, min_id=97, min_cov=5, min_genome_
     threads = []
     for contig in assemblyCoords.query.index.keys():
         spool = {}
-        print(contig)
+        if contig == 'k141_64623':
+            print(contig)
         if assemblyCoords.query.index[contig].rlen >= min_length:
 
             for query_coords in assemblyCoords.generate(contig, source='q'):
                 # Add in initial fragment if it is good
                 if query_coords.percent_id >= min_id and query_coords.s2_len >= min_length and query_coords.q_cov >= min_cov:
                     try:
+                        if contig == 'k141_64623':
+                            print("Initially seen")
                         if query_coords.seen:
                             continue
                     except AttributeError:
@@ -240,6 +243,8 @@ def binContigs(assemblyCoords, min_length=500, min_id=97, min_cov=5, min_genome_
                 matched = False
                 while searching is True:
                     for entry_coords in assemblyCoords.generate(tag, source=source):
+                        if entry_coords.q_tag == 'k141_64623':
+                            print("initial search point ", source)
                         if entry_coords.percent_id >= min_id and entry_coords.s2_len >= min_length and entry_coords.q_cov >= min_cov:
                             try:
                                 if entry_coords.seen:
@@ -274,6 +279,8 @@ def binContigs(assemblyCoords, min_length=500, min_id=97, min_cov=5, min_genome_
                                 source = 'q'
                                 break
                             else:
+                                if entry_coords.q_tag == 'k141_64623':
+                                    print(entry_coords)
                                 tag = entry_coords.r_tag
                                 source = 'r'
                                 break
