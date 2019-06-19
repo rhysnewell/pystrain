@@ -97,7 +97,7 @@ def tests():
 
 # tests()
 
-def binContigs(assemblyCoords, min_length=500, min_id=97, min_cov=20):
+def binContigs(assemblyCoords, min_length=500, min_id=97, min_cov=20, min_genome_length=500000):
     bin_cnt = 0
     bins = {}
     for contig in assemblyCoords.query.index.keys():
@@ -172,7 +172,7 @@ def binContigs(assemblyCoords, min_length=500, min_id=97, min_cov=20):
                         except AttributeError:
                             entry_coords.seen = False
                         searching = False
-            if len(spool) >= 1:
+            if len("".join([seq.seq for seq in spool.values()])) >= min_genome_length:
                 bins["bin."+str(bin_cnt)] = spool
     return bins
 
