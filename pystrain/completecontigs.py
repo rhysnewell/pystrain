@@ -103,7 +103,7 @@ def binContigs(assemblyCoords, min_length=500, min_id=97, min_cov=20, min_genome
     for contig in assemblyCoords.query.index.keys():
         spool = {}
         if assemblyCoords.query.index[contig].rlen >= min_length:
-            bin_cnt += 1
+
             for query_coords in assemblyCoords.generate(contig, source='q'):
                 # Add in initial fragment if it is good
                 if query_coords.percent_id >= min_id and query_coords.s2_len >= min_length and query_coords.q_cov >= min_cov:
@@ -173,6 +173,7 @@ def binContigs(assemblyCoords, min_length=500, min_id=97, min_cov=20, min_genome
                             entry_coords.seen = False
                         searching = False
             if len("".join([seq.seq for seq in spool.values()])) >= min_genome_length:
+                bin_cnt += 1
                 bins["bin."+str(bin_cnt)] = spool
     return bins
 
