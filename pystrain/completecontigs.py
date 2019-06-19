@@ -97,7 +97,7 @@ def tests():
 
 # tests()
 
-def binContigs(assemblyCoords, min_length=500, min_id=97, min_cov=20, min_genome_length=50000, simple=True):
+def binContigs(assemblyCoords, min_length=500, min_id=97, min_cov=20, min_genome_length=30000, simple=True):
     bin_cnt = 0
     bins = {}
     for contig in assemblyCoords.query.index.keys():
@@ -113,9 +113,10 @@ def binContigs(assemblyCoords, min_length=500, min_id=97, min_cov=20, min_genome
                     except AttributeError:
                         query_coords.seen = False
                     if simple:
-                        if query_coords.percent_id >= min_id and query_coords.s2_len >= min_length and query_coords.q_cov >= min_cov:
-                            spool[query_coords.q_tag] = assemblyCoords.query.fetch(query_coords.q_tag, 1,
-                                                                                       assemblyCoords.query.index[query_coords.q_tag].rlen)
+                        spool[query_coords.q_tag] = assemblyCoords.query.fetch(query_coords.q_tag, 1,
+                                                                                   assemblyCoords.query.index[query_coords.q_tag].rlen)
+                        query_coords.seen = True
+
                     else:
                         try:
                             contig_fraction = assemblyCoords.query.fetch(query_coords.q_tag,
@@ -148,10 +149,11 @@ def binContigs(assemblyCoords, min_length=500, min_id=97, min_cov=20, min_genome
                             matched = True
                             # print(entry_coords)
                             if simple:
-                                if query_coords.percent_id >= min_id and query_coords.s2_len >= min_length and query_coords.q_cov >= min_cov:
-                                    spool[query_coords.q_tag] = assemblyCoords.query.fetch(query_coords.q_tag, 1,
-                                                                                           assemblyCoords.query.index[
-                                                                                               query_coords.q_tag].rlen)
+                                spool[entry_coords.q_tag] = assemblyCoords.query.fetch(entry_coords.q_tag, 1,
+                                                                                       assemblyCoords.query.index[
+                                                                                           entry_coords.q_tag].rlen)
+                                entry_coords.seen = True
+
                             else:
                                 try:
                                     contig_fraction = assemblyCoords.query.fetch(entry_coords.q_tag,
@@ -187,6 +189,8 @@ def binContigs(assemblyCoords, min_length=500, min_id=97, min_cov=20, min_genome
                 bin_cnt += 1
                 bins["bin."+str(bin_cnt)] = spool
     return bins
+
+
 
 
 def buildContigs(assemblyCoords, oldBin, simple=True, outputDirectory='./', min_length = 2000, min_id = 85, min_cov=90):
