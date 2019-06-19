@@ -8,9 +8,12 @@ import sys, os, glob
 from sklearn.cluster import KMeans
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
+import pyfaidx
 
 bf = vcf.vcfFile('tests/r2.parent.d182.vcf')
 fai = fastaindex.faiFile('tests/r2.parent.d182.assembly.fna.fai')
+
+variants = pyfaidx.FastaVariant('tests/r2.parent.d182.assembly.fna', 'tests/r2.parent.d182.vcf', het=True, hom=True)
 
 def bin_contigs(vcf_file, fai_file):
     value_dict = {}

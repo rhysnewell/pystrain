@@ -4,6 +4,7 @@ import pystrain.sequence as sequence
 import pyfaidx
 import sys, os, glob
 import importlib
+import threading
 
 def connectFragment(oldFragment, newFragment):
     """
@@ -97,9 +98,108 @@ def tests():
 
 # tests()
 
-def binContigs(assemblyCoords, min_length=500, min_id=97, min_cov=20, min_genome_length=250000, simple=True):
+def binOnThread(assemblyCoords, contig, min_length, min_id, min_cov, min_genome_length, bin_cnt, simple=True, outputDirectory = "./"):
+    spool = {}
+    if assemblyCoords.query.index[contig].rlen >= min_length:
+
+        for query_coords in assemblyCoords.generate(contig, source='q'):
+            # Add in initial fragment if it is good
+            if query_coords.percent_id >= min_id and query_coords.s2_len >= min_length and query_coords.q_cov >= min_cov:
+                try:
+                    if query_coords.seen:
+                        continue
+                except AttributeError:
+                    query_coords.seen = False
+                if simple:
+                    spool[query_coords.q_tag] = assemblyCoords.query.fetch(query_coords.q_tag, 1,
+                                                                           assemblyCoords.query.index[
+                                                                               query_coords.q_tag].rlen)
+                    query_coords.seen = True
+
+                else:
+                    try:
+                        contig_fraction = assemblyCoords.query.fetch(query_coords.q_tag,
+                                                                     query_coords.s2_start, query_coords.s2_end)
+                        contig_fraction.percentIdentity = query_coords.percent_id
+                        spool[query_coords.q_tag] = connectFragment(spool[query_coords.q_tag],
+                                                                    contig_fraction)
+                        query_coords.seen = True
+                    except KeyError:
+                        contig_fraction = assemblyCoords.query.fetch(query_coords.q_tag,
+                                                                     query_coords.s2_start, query_coords.s2_end)
+                        contig_fraction.percentIdentity = query_coords.percent_id
+                        spool[query_coords.q_tag] = contig_fraction
+                        query_coords.seen = True
+
+            # Then begin search through reference contig
+            source = 'r'
+            tag = query_coords.r_tag
+            searching = True
+            matched = False
+            while searching is True:
+                for entry_coords in assemblyCoords.generate(tag, source=source):
+                    if entry_coords.percent_id >= min_id and entry_coords.s2_len >= min_length and entry_coords.q_cov >= min_cov:
+                        try:
+                            if entry_coords.seen:
+                                continue
+                        except AttributeError:
+                            entry_coords.seen = False
+
+                        matched = True
+                        # print(entry_coords)
+                        if simple:
+                            spool[entry_coords.q_tag] = assemblyCoords.query.fetch(entry_coords.q_tag, 1,
+                                                                                   assemblyCoords.query.index[
+                                                                                       entry_coords.q_tag].rlen)
+                            entry_coords.seen = True
+
+                        else:
+                            try:
+                                contig_fraction = assemblyCoords.query.fetch(entry_coords.q_tag,
+                                                                             entry_coords.s2_start, entry_coords.s2_end)
+                                contig_fraction.percentIdentity = entry_coords.percent_id
+                                spool[entry_coords.q_tag] = connectFragment(spool[entry_coords.q_tag],
+                                                                            contig_fraction)
+                                entry_coords.seen = True
+                            except KeyError:
+                                contig_fraction = assemblyCoords.query.fetch(entry_coords.q_tag,
+                                                                             entry_coords.s2_start, entry_coords.s2_end)
+                                contig_fraction.percentIdentity = entry_coords.percent_id
+                                spool[entry_coords.q_tag] = contig_fraction
+                                entry_coords.seen = True
+                        if source == 'r':
+                            tag = entry_coords.q_tag
+                            source = 'q'
+                            break
+                        else:
+                            tag = entry_coords.r_tag
+                            source = 'r'
+                            break
+                if matched is True:
+                    matched = False
+                else:
+                    try:
+                        if entry_coords.seen:
+                            entry_coords.seen = False
+                    except AttributeError:
+                        entry_coords.seen = False
+                    searching = False
+        if len("".join([seq.seq for seq in spool.values()])) >= min_genome_length:
+            bin_cnt += 1
+            # bins["bin."+str(bin_cnt)] = spool
+            print("Working on bin:", bin_cnt)
+            with open(outputDirectory + "/" + str(bin_cnt) + ".fna", 'w') as fh:
+                for contig in spool.keys():
+                    seq = spool[contig]
+                    fasta = ">" + seq.name + '\n'
+                    fasta += seq.seq + '\n'
+                    fh.write(fasta)
+
+def binContigs(assemblyCoords, min_length=500, min_id=97, min_cov=5, min_genome_length=250000, simple=True, outputDirectory = "./", numThreads=5):
     bin_cnt = 0
     bins = {}
+    threadLock = threading.Lock()
+    threads = []
     for contig in assemblyCoords.query.index.keys():
         spool = {}
         if assemblyCoords.query.index[contig].rlen >= min_length:
@@ -187,10 +287,15 @@ def binContigs(assemblyCoords, min_length=500, min_id=97, min_cov=20, min_genome
                         searching = False
             if len("".join([seq.seq for seq in spool.values()])) >= min_genome_length:
                 bin_cnt += 1
-                bins["bin."+str(bin_cnt)] = spool
+                # bins["bin."+str(bin_cnt)] = spool
+                print("Working on bin:", bin_cnt)
+                with open(outputDirectory + "/" + "bin." + str(bin_cnt) + ".fna", 'w') as fh:
+                    for contig in spool.keys():
+                        seq = spool[contig]
+                        fasta = ">" + seq.name + '\n'
+                        fasta += seq.seq + '\n'
+                        fh.write(fasta)
     return bins
-
-
 
 
 def buildContigs(assemblyCoords, oldBin, simple=True, outputDirectory='./', min_length = 2000, min_id = 85, min_cov=90):
@@ -266,15 +371,15 @@ def spooledBinning(assemblyCoordFile, outputDirectory,  minLength, minMatch, min
     except FileExistsError:
         print("Overwriting existing files")
 
-    bins = binContigs(assembly_coords, minLength, minMatch, minCov)
-    for mag in bins.keys():
-        print("Working on: ", mag)
-        with open(outputDirectory + "/" + mag+".fna", 'w') as fh:
-            for contig in bins[mag].keys():
-                seq = bins[mag][contig]
-                fasta = ">" + seq.name + '\n'
-                fasta += seq.seq + '\n'
-                fh.write(fasta)
+    binContigs(assembly_coords, minLength, minMatch, minCov, outputDirectory=outputDirectory)
+    # for mag in bins.keys():
+    #     print("Working on: ", mag)
+    #     with open(outputDirectory + "/" + mag+".fna", 'w') as fh:
+    #         for contig in bins[mag].keys():
+    #             seq = bins[mag][contig]
+    #             fasta = ">" + seq.name + '\n'
+    #             fasta += seq.seq + '\n'
+    #             fh.write(fasta)
     print("done!")
 
 
