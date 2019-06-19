@@ -97,7 +97,7 @@ def tests():
 
 # tests()
 
-def binContigs(assemblyCoords, min_length=500, min_id=97, min_cov=20, min_genome_length=30000, simple=True):
+def binContigs(assemblyCoords, min_length=500, min_id=97, min_cov=20, min_genome_length=250000, simple=True):
     bin_cnt = 0
     bins = {}
     for contig in assemblyCoords.query.index.keys():
