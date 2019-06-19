@@ -141,7 +141,7 @@ def binContigs(assemblyCoords, min_length=500, min_id=97, min_cov=20):
                                 entry_coords.seen = False
 
                             matched = True
-                            print(entry_coords)
+                            # print(entry_coords)
                             try:
                                 contig_fraction = assemblyCoords.query.fetch(entry_coords.q_tag,
                                                                              entry_coords.s2_start, entry_coords.s2_end)
@@ -252,12 +252,14 @@ def spooledBinning(assemblyCoordFile, outputDirectory,  minLength, minMatch, min
 
     bins = binContigs(assembly_coords, minLength, minMatch, minCov)
     for mag in bins.keys():
+        print("Working on: ", mag)
         with open(outputDirectory + "/" + mag+".fna", 'w') as fh:
             for contig in bins[mag].keys():
                 seq = bins[mag][contig]
                 fasta = ">" + seq.name + '\n'
                 fasta += seq.seq + '\n'
                 fh.write(fasta)
+    print("done!")
 
 
 if __name__ == "__main__":
