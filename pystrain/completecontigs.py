@@ -202,8 +202,6 @@ def binContigs(assemblyCoords, min_length=500, min_id=97, min_cov=5, min_genome_
     threads = []
     for contig in assemblyCoords.query.index.keys():
         spool = {}
-        if contig == 'k141_64623':
-            print(contig)
         if assemblyCoords.query.index[contig].rlen >= min_length:
 
             for query_coords in assemblyCoords.generate(contig, source='q'):
@@ -273,14 +271,10 @@ def binContigs(assemblyCoords, min_length=500, min_id=97, min_cov=5, min_genome_
                                     spool[entry_coords.q_tag] = contig_fraction
                                     entry_coords.seen = True
                             if source == 'r':
-                                if entry_coords.q_tag == 'k141_64623':
-                                    print(entry_coords.r_tag, ' to ', entry_coords.q_tag)
                                 tag = entry_coords.q_tag
                                 source = 'q'
                                 break
                             else:
-                                if entry_coords.q_tag == 'k141_64623':
-                                    print(entry_coords.q_tag, ' to ', entry_coords.r_tag)
                                 tag = entry_coords.r_tag
                                 source = 'r'
                                 break
@@ -289,9 +283,7 @@ def binContigs(assemblyCoords, min_length=500, min_id=97, min_cov=5, min_genome_
                     else:
                         try:
                             searching = False
-                            if entry_coords.seen:
-                                if entry_coords.q_tag == 'k141_64623':
-                                    print("Flipping to unseen ", entry_coords)
+                            # if entry_coords.seen:
                                 # entry_coords.seen = False
                         except AttributeError:
                             searching = False
@@ -307,6 +299,11 @@ def binContigs(assemblyCoords, min_length=500, min_id=97, min_cov=5, min_genome_
                         fh.write(fasta)
     return bins
 
+def fragmentOverlap(ref1, ref2):
+    if (ref2.s1_end < ref1.s1_start): return False
+    if (ref1.s1_end < ref2.s1_start): return False
+    return True
+
 
 def buildContigs(assemblyCoords, oldBin, simple=True, outputDirectory='./', min_length = 2000, min_id = 85, min_cov=90):
     """
@@ -321,7 +318,7 @@ def buildContigs(assemblyCoords, oldBin, simple=True, outputDirectory='./', min_
     for contig in oldBin.index.keys():
         for query_contig in assemblyCoords.generate(contig, source='q'):
             for ref_contig in assemblyCoords.generate(query_contig.r_tag, source='r'):
-                if ref_contig.q_tag not in oldBin.index.keys():
+                if ref_contig.q_tag not in oldBin.index.keys() and not fragmentOverlap(query_contig, ref_contig):
                     dist = ref_contig.s1_start - query_contig.s1_end
                     if simple:
                         if ref_contig.percent_id >= min_id and ref_contig.s2_len >= min_length and ref_contig.q_cov >= min_cov:
@@ -417,7 +414,7 @@ if __name__ == "__main__":
                 print(
                     "Usage: completecontigs.py build <AssemblyCoords> <BinsDirectory> <OutputDirectory> <MinimumMatchLength> <MinimumMatchID> <MinimumQueryCoverage> [ComplexMode]")
 
-        if mode == 'bin':
+        elif mode == 'bin':
             try:
                 assembly = sys.argv[2]
                 output_directory = sys.argv[3]
