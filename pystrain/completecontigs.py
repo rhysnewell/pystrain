@@ -324,7 +324,7 @@ def buildContigs(assemblyCoords, oldBin, simple=True, outputDirectory='./', min_
                         chosen_entry = ref_contig
                     elif chosen_entry.r_cov*chosen_entry.percent_id < ref_contig.r_cov*ref_contig.percent_id:
                         chosen_entry = ref_contig
-            dist = chosen_entry.s1_start - query_contig.s1_end
+            # dist = chosen_entry.s1_start - query_contig.s1_end
             if simple and chosen_entry is not None:
                 if chosen_entry.percent_id >= min_id and chosen_entry.s2_len >= min_length and chosen_entry.q_cov >= min_cov:
                     new_contigs[chosen_entry.q_tag] = assemblyCoords.query.fetch(chosen_entry.q_tag, 1,
