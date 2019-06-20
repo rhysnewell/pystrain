@@ -241,8 +241,8 @@ def binContigs(assemblyCoords, min_length=500, min_id=97, min_cov=5, min_genome_
                 matched = False
                 while searching is True:
                     for entry_coords in assemblyCoords.generate(tag, source=source):
-                        if entry_coords.q_tag == 'k141_64623':
-                            print("initial search point ", entry_coords)
+                        # if entry_coords.q_tag == 'k141_64623':
+                        #     print("initial search point ", entry_coords)
                         if entry_coords.percent_id >= min_id and entry_coords.s2_len >= min_length and entry_coords.q_cov >= min_cov:
                             try:
                                 if entry_coords.seen:
@@ -290,6 +290,8 @@ def binContigs(assemblyCoords, min_length=500, min_id=97, min_cov=5, min_genome_
                         try:
                             searching = False
                             if entry_coords.seen:
+                                if entry_coords.q_tag == 'k141_64623':
+                                    print("Flipping to unseen ", entry_coords)
                                 entry_coords.seen = False
                         except AttributeError:
                             searching = False
