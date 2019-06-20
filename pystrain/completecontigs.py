@@ -292,7 +292,7 @@ def binContigs(assemblyCoords, min_length=500, min_id=97, min_cov=5, min_genome_
                             if entry_coords.seen:
                                 if entry_coords.q_tag == 'k141_64623':
                                     print("Flipping to unseen ", entry_coords)
-                                entry_coords.seen = False
+                                # entry_coords.seen = False
                         except AttributeError:
                             searching = False
             if len("".join([seq.seq for seq in spool.values()])) >= min_genome_length:
