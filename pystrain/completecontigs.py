@@ -317,26 +317,31 @@ def buildContigs(assemblyCoords, oldBin, simple=True, outputDirectory='./', min_
     connections = {}
     for contig in oldBin.index.keys():
         for query_contig in assemblyCoords.generate(contig, source='q'):
+            chosen_entry = None  # We want to choose the best hit based on length and percentID
             for ref_contig in assemblyCoords.generate(query_contig.r_tag, source='r'):
                 if ref_contig.q_tag not in oldBin.index.keys() and not fragmentOverlap(query_contig, ref_contig):
-                    dist = ref_contig.s1_start - query_contig.s1_end
-                    if simple:
-                        if ref_contig.percent_id >= min_id and ref_contig.s2_len >= min_length and ref_contig.q_cov >= min_cov:
-                            new_contigs[ref_contig.q_tag] = assemblyCoords.query.fetch(ref_contig.q_tag, 1,
-                                                                                       assemblyCoords.query.index[ref_contig.q_tag].rlen)
-                    else:
-                        if ref_contig.percent_id >= min_id and ref_contig.s2_len >= min_length and ref_contig.q_cov >= min_cov:
-                            try:
-                                contig_fraction = assemblyCoords.query.fetch(ref_contig.q_tag,
-                                                                             ref_contig.s2_start, ref_contig.s2_end)
-                                contig_fraction.percentIdentity = ref_contig.percent_id
-                                new_contigs[ref_contig.q_tag] = connectFragment(new_contigs[ref_contig.q_tag],
-                                                                                contig_fraction)
-                            except KeyError:
-                                contig_fraction = assemblyCoords.query.fetch(ref_contig.q_tag,
-                                                                             ref_contig.s2_start, ref_contig.s2_end)
-                                contig_fraction.percentIdentity = ref_contig.percent_id
-                                new_contigs[ref_contig.q_tag] = contig_fraction
+                    if chosen_entry is None:
+                        chosen_entry = ref_contig
+                    elif chosen_entry.r_cov*chosen_entry.percent_id < ref_contig.r_cov*ref_contig.percent_id:
+                        chosen_entry = ref_contig
+            dist = chosen_entry.s1_start - query_contig.s1_end
+            if simple and chosen_entry is not None:
+                if chosen_entry.percent_id >= min_id and chosen_entry.s2_len >= min_length and chosen_entry.q_cov >= min_cov:
+                    new_contigs[chosen_entry.q_tag] = assemblyCoords.query.fetch(chosen_entry.q_tag, 1,
+                                                                               assemblyCoords.query.index[chosen_entry.q_tag].rlen)
+            elif not simple and chosen_entry is not None:
+                if chosen_entry.percent_id >= min_id and chosen_entry.s2_len >= min_length and chosen_entry.q_cov >= min_cov:
+                    try:
+                        contig_fraction = assemblyCoords.query.fetch(chosen_entry.q_tag,
+                                                                     chosen_entry.s2_start, chosen_entry.s2_end)
+                        contig_fraction.percentIdentity = chosen_entry.percent_id
+                        new_contigs[chosen_entry.q_tag] = connectFragment(new_contigs[chosen_entry.q_tag],
+                                                                        contig_fraction)
+                    except KeyError:
+                        contig_fraction = assemblyCoords.query.fetch(chosen_entry.q_tag,
+                                                                     chosen_entry.s2_start, chosen_entry.s2_end)
+                        contig_fraction.percentIdentity = chosen_entry.percent_id
+                        new_contigs[chosen_entry.q_tag] = contig_fraction
 
     return new_contigs
 
