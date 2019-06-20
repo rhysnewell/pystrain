@@ -210,8 +210,6 @@ def binContigs(assemblyCoords, min_length=500, min_id=97, min_cov=5, min_genome_
                 # Add in initial fragment if it is good
                 if query_coords.percent_id >= min_id and query_coords.s2_len >= min_length and query_coords.q_cov >= min_cov:
                     try:
-                        if contig == 'k141_64623':
-                            print("Initially seen")
                         if query_coords.seen:
                             continue
                     except AttributeError:
@@ -244,7 +242,7 @@ def binContigs(assemblyCoords, min_length=500, min_id=97, min_cov=5, min_genome_
                 while searching is True:
                     for entry_coords in assemblyCoords.generate(tag, source=source):
                         if entry_coords.q_tag == 'k141_64623':
-                            print("initial search point ", source)
+                            print("initial search point ", entry_coords)
                         if entry_coords.percent_id >= min_id and entry_coords.s2_len >= min_length and entry_coords.q_cov >= min_cov:
                             try:
                                 if entry_coords.seen:
@@ -275,12 +273,14 @@ def binContigs(assemblyCoords, min_length=500, min_id=97, min_cov=5, min_genome_
                                     spool[entry_coords.q_tag] = contig_fraction
                                     entry_coords.seen = True
                             if source == 'r':
+                                if entry_coords.q_tag == 'k141_64623':
+                                    print(entry_coords.r_tag, ' to ', entry_coords.q_tag)
                                 tag = entry_coords.q_tag
                                 source = 'q'
                                 break
                             else:
                                 if entry_coords.q_tag == 'k141_64623':
-                                    print(entry_coords)
+                                    print(entry_coords.q_tag, ' to ', entry_coords.r_tag)
                                 tag = entry_coords.r_tag
                                 source = 'r'
                                 break
@@ -298,8 +298,8 @@ def binContigs(assemblyCoords, min_length=500, min_id=97, min_cov=5, min_genome_
                 # bins["bin."+str(bin_cnt)] = spool
                 print("Working on bin:", bin_cnt)
                 with open(outputDirectory + "/" + "bin." + str(bin_cnt) + ".fna", 'w') as fh:
-                    for contig in spool.keys():
-                        seq = spool[contig]
+                    for key in spool.keys():
+                        seq = spool[key]
                         fasta = ">" + seq.name + '\n'
                         fasta += seq.seq + '\n'
                         fh.write(fasta)
