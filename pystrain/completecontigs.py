@@ -407,14 +407,15 @@ def twoSampleBuildContigs(assemblyCoordsFile, queryAlignment, binCoordsDirectory
     sys.exit()
 
 def spooledBinning(assemblyCoordFile, queryAlignment, outputDirectory,  minLength, minMatch, minCov, simple):
-    assembly_coords = coords.readCoordFile(assemblyCoordFile)
+    assembly_coords = coords.readCoordFile(assemblyCoordFile, readFastas=True)
+    query_alignment = coords.readCoordFile(queryAlignment, readFastas=False)
 
     try:
         os.mkdir(outputDirectory)
     except FileExistsError:
         print("Overwriting existing files")
 
-    binContigs(assembly_coords, queryAlignment, minLength, minMatch, minCov, outputDirectory=outputDirectory, simple=simple)
+    binContigs(assembly_coords, query_alignment, minLength, minMatch, minCov, outputDirectory=outputDirectory, simple=simple)
     # for mag in bins.keys():
     #     print("Working on: ", mag)
     #     with open(outputDirectory + "/" + mag+".fna", 'w') as fh:
