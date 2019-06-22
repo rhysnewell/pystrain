@@ -61,16 +61,17 @@ class nucmerCoords(object):
 
 class coordFile():
 
-    def __init__(self, entries, reference_path, query_path):
+    def __init__(self, entries, reference_path=None, query_path=None):
         # self.source = dict()
         # self.contigs = dict()
         self.r_contigs = dict()
         self.q_contigs = dict()
-        self.reference_name = reference_path.split('/')[-1]
-        self.reference = pyfaidx.Faidx(reference_path)
-
-        self.query_name = query_path.split('/')[-1]
-        self.query = pyfaidx.Faidx(query_path)
+        if reference_path is not None:
+            self.reference_name = reference_path.split('/')[-1]
+            self.reference = pyfaidx.Faidx(reference_path)
+        if query_path is not None:
+            self.query_name = query_path.split('/')[-1]
+            self.query = pyfaidx.Faidx(query_path)
 
 
         for entry in entries:
@@ -147,7 +148,7 @@ class coordFile():
             return False
 
 
-def readCoordFile(filename):
+def readCoordFile(filename, readFastas=True):
     coordlist = []
     batch = ''  # a batch of rows including one or more complete FASTA entries
     rowcnt = 0
@@ -169,7 +170,10 @@ def readCoordFile(filename):
             elif start is True:
                 row = ''.join(row.split('|')).split()
                 coordlist.append(nucmerCoords(row))
-    coords_file = coordFile(coordlist, ref_path, query_path)
+    if readFastas:
+        coords_file = coordFile(coordlist, ref_path, query_path)
+    else:
+        coords_file = coordFile(coordlist)
     return coords_file
 
 if __name__=='__main__':

@@ -299,13 +299,13 @@ def binContigs(assemblyCoords, min_length=500, min_id=97, min_cov=5, min_genome_
                         fh.write(fasta)
     return bins
 
-def fragmentOverlap(ref1, ref2):
+def refFragmentOverlap(ref1, ref2):
     if (ref2.s1_end < ref1.s1_start): return False
     if (ref1.s1_end < ref2.s1_start): return False
     return True
 
 
-def buildContigs(assemblyCoords, oldBin, simple=True, outputDirectory='./', min_length = 2000, min_id = 85, min_cov=90):
+def buildContigs(assemblyCoords, queryAlignment, oldBin, simple=True, outputDirectory='./', min_length = 2000, min_id = 85, min_cov=90):
     """
 
     :param assemblyCoords: The alignment coords produced by nucmer when aligning two assemblies contigs together
@@ -319,11 +319,17 @@ def buildContigs(assemblyCoords, oldBin, simple=True, outputDirectory='./', min_
         for query_contig in assemblyCoords.generate(contig, source='q'):
             chosen_entry = None  # We want to choose the best hit based on length and percentID
             for ref_contig in assemblyCoords.generate(query_contig.r_tag, source='r'):
-                if ref_contig.q_tag not in oldBin.index.keys() and not fragmentOverlap(query_contig, ref_contig):
-                    if chosen_entry is None:
-                        chosen_entry = ref_contig
-                    elif chosen_entry.r_cov*chosen_entry.percent_id < ref_contig.r_cov*ref_contig.percent_id:
-                        chosen_entry = ref_contig
+                if ref_contig.q_tag not in oldBin.index.keys() and not refFragmentOverlap(query_contig, ref_contig):
+                    aligns_in_bin = False  # Boolean used to check if contig aligns with anything in the bin
+                    for self_alignments in queryAlignment.generate(ref_contig.q_tag, source='r'):
+                        # search through self alignments to see if there is similarity to the bin already
+                        if self_alignments.q_tag in oldBin.index.keys():
+                            aligns_in_bin = True
+                    if aligns_in_bin is False:
+                        if chosen_entry is None:
+                            chosen_entry = ref_contig
+                        elif chosen_entry.r_cov*chosen_entry.percent_id < ref_contig.r_cov*ref_contig.percent_id:
+                            chosen_entry = ref_contig
             # dist = chosen_entry.s1_start - query_contig.s1_end
             if simple and chosen_entry is not None:
                 if chosen_entry.percent_id >= min_id and chosen_entry.s2_len >= min_length and chosen_entry.q_cov >= min_cov:
@@ -346,9 +352,10 @@ def buildContigs(assemblyCoords, oldBin, simple=True, outputDirectory='./', min_
     return new_contigs
 
 
-def twoSampleBuildContigs(assemblyCoordsFile, binCoordsDirectory, outputDirectory, minLength, minMatch, minCov, simple):
+def twoSampleBuildContigs(assemblyCoordsFile, queryAlignment, binCoordsDirectory, outputDirectory, minLength, minMatch, minCov, simple):
     binCoords = glob.glob(binCoordsDirectory+"/*")
     assembly_coords = coords.readCoordFile(assemblyCoordsFile)
+    query_alignment = coords.readCoordFile(queryAlignment, readFastas=False)
 
     try:
         os.mkdir(outputDirectory)
@@ -359,7 +366,7 @@ def twoSampleBuildContigs(assemblyCoordsFile, binCoordsDirectory, outputDirector
         if file.endswith(".fna") or file.endswith(".fa"):
             print("Working on: ", file)
             oldBin = pyfaidx.Faidx(file)
-            new_contigs = buildContigs(assembly_coords, oldBin, simple, outputDirectory, minLength, minMatch, minCov)
+            new_contigs = buildContigs(assembly_coords, query_alignment, oldBin, simple, outputDirectory, minLength, minMatch, minCov)
             with open(outputDirectory + "/new_" + file.split('/')[-1], 'w') as fh:
 
                 for contig in oldBin.index.keys():
@@ -402,17 +409,18 @@ if __name__ == "__main__":
         if mode == 'build':
             try:
                 assembly = sys.argv[2]
-                bins = sys.argv[3]
-                output_directory = sys.argv[4]
-                min_length = sys.argv[5]
-                min_match = sys.argv[6]
-                min_query_cov = sys.argv[7]
+                query_alignment = sys.argv[3]
+                bins = sys.argv[4]
+                output_directory = sys.argv[5]
+                min_length = sys.argv[6]
+                min_match = sys.argv[7]
+                min_query_cov = sys.argv[8]
                 try:
-                    present = sys.argv[8]
+                    present = sys.argv[9]
                     simple = False
                 except IndexError:
                     simple = True
-                twoSampleBuildContigs(assembly, bins, output_directory, float(min_length), float(min_match),
+                twoSampleBuildContigs(assembly, query_alignment, bins, output_directory, float(min_length), float(min_match),
                                       float(min_query_cov), simple)
 
             except IndexError:
