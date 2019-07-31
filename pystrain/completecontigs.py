@@ -332,7 +332,7 @@ def buildContigs(assemblyCoords, queryAlignment, oldBin, simple=True, outputDire
     """
 
     :param assemblyCoords: The alignment coords produced by nucmer when aligning two assemblies contigs together
-    :param binCoords:  a metagenomic bin
+    :param oldBin:  a metagenomic bin
     :return: Two new bin .fna files with any additional contigs that were found to be present in both samples and
     binned in one species
     """
