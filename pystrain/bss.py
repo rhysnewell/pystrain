@@ -44,8 +44,35 @@ def melt_dict(strain_dict):
             array = np.append(array, bases)
     return array
 
+def read_covar(filename, k=10):
+    array = []
+    with open(filename) as f:
+        for line in f:
+            line = line.strip().split()
+            line = list(map(int, line))
+            array.append(line)
+    array = np.array(array)
 
-def read_strainm(filenames):
+    lsnmf = nimfa.Lsnmf(array, seed='random_vcol', rank=k, max_iter=10, update='divergence',
+                objective='div')
+
+    # lsnmf = nimfa.SepNmf(array, seed='random_vcol', rank=k, n_run=10)
+    lsnmf_fit = lsnmf()
+    # best_rank = lsnmf.estimate_rank(rank_range=range(8,15))
+    # for rank, values in best_rank.items():
+    #     print('Rank: %d' % rank)
+    #     print('Rss: %5.4f' % values['rss'])
+    #     print('Evar: %5.4f' % values['evar'])
+    #     print('K-L: %5.4f' % values['kl'])
+    # print(best_rank)
+    print('Rss: %5.4f' % lsnmf_fit.fit.rss())
+    print('Evar: %5.4f' % lsnmf_fit.fit.evar())
+    print('K-L divergence: %5.4f' % lsnmf_fit.distance(metric='kl'))
+    print('Sparseness, W: %5.4f, H: %5.4f' % lsnmf_fit.fit.sparseness())
+    return array, lsnmf_fit
+
+
+def run_lorikeet(filename):
     # array = [[] for i in filenames]
     array = {}
     for (idx, filename) in enumerate(filenames):
@@ -182,8 +209,9 @@ def perform_nmf(filename, k=10):
     col_ids = list(array.keys())
     array = np.array(list(array.values()))
     array = array.T
-    lsnmf = nimfa.Lsnmf(array, seed='random_vcol', rank=k, max_iter=10, update='divergence',
-                objective='div')
+    # lsnmf = nimfa.Lsnmf(array, seed='random_vcol', rank=k, max_iter=10, update='divergence',
+    #             objective='div')
+    lsnmf = nimfa.SepNmf(array, seed='random_vcol', rank=k, n_run=10)
     lsnmf_fit = lsnmf()
     # best_rank = lsnmf.estimate_rank(rank_range=range(8,15))
     # for rank, values in best_rank.items():
@@ -197,13 +225,16 @@ def perform_nmf(filename, k=10):
     print('K-L divergence: %5.4f' % lsnmf_fit.distance(metric='kl'))
     print('Sparseness, W: %5.4f, H: %5.4f' % lsnmf_fit.fit.sparseness())
 
-    bins = np.array(lsnmf_fit.fit.predict())[0]
+    predictions = lsnmf_fit.fit.predict(prob=True)
+    bins = np.array(predictions[0])[0]
     bin_dict = {}
+    prob_idx = 0
     for (bin_id, contig_name) in zip(bins, col_ids):
-        try:
-            bin_dict[bin_id].append(contig_name)
-        except KeyError:
-            bin_dict[bin_id] = [contig_name]
+        if predictions[1][prob_idx] >= 0.5:
+            try:
+                bin_dict[bin_id].append(contig_name)
+            except KeyError:
+                bin_dict[bin_id] = [contig_name]
 
     return lsnmf_fit, bin_dict
 
@@ -220,117 +251,13 @@ def bin_contigs(bin_dict, assembly_file):
 
 
 
-def centre(x):
-    meanX = np.mean(x, axis=1, keepdims=True)
-    return x - meanX, meanX
-
-
-def covariance(x):
-    mean = np.mean(x, axis=1, keepdims=True)
-    n = np.shape(x)[1] - 1
-    m = x - mean
-    return (m.dot(m.T))/n
-
-
-def whiten(x):
-    # covariance matrix
-    coVarM = covariance(x)
-
-    # singular value decomposition
-    U, S, V = np.linalg.svd(coVarM)
-
-    # calculate diagonal matrix of eigenvalues
-    d = np.diag(1.0 / np.sqrt(S))
-
-    # whitening matrix
-    whiteM = np.dot(U, np.dot(d, U.T))
-
-    # Project on to whitening matrix
-    Xw = np.dot(whiteM, x)
-
-    return Xw, whiteM
-
-
-def kurtosis(x):
-    n = np.shape(x)[0]
-    mean = np.sum((x**1)/n) # Calculate the mean
-    var = np.sum((x-mean)**2)/n # Calculate the variance
-    skew = np.sum((x-mean)**3)/n # Calculate the skewness
-    kurt = np.sum((x-mean)**4)/n # Calculate the kurtosis
-    kurt = kurt/(var**2)-3
-    return kurt, skew, var, mean
-
-
-def fastIca(signals, alpha=1, thresh=1e-8, iterations=5000):
-    m, n = signals.shape
-    # Initialize random weights
-    W = np.random.rand(m, m)
-    for c in range(m):
-        w = W[c, :].copy().reshape(m, 1)
-        w = w / np.sqrt((w ** 2).sum())
-        i = 0
-        lim = 100
-        while ((lim > thresh) & (i < iterations)):
-            # Dot product of weight and signal
-            ws = np.dot(w.T, signals)
-            # Pass w*s into contrast function g
-            wg = np.tanh(ws * alpha).T
-            # Pass w*s into g'
-            wg_ = (1 - np.square(np.tanh(ws))) * alpha
-            # Update weights
-            wNew = (signals * wg.T).mean(axis=1) - wg_.mean() * w.squeeze()
-            # Decorrelate weights
-            wNew = wNew - np.dot(np.dot(wNew, W[:c].T), W[:c])
-            wNew = wNew / np.sqrt((wNew ** 2).sum())
-            # Calculate limit condition
-            lim = np.abs(np.abs((wNew * w).sum()) - 1)
-
-            # Update weights
-            w = wNew
-
-            # Update counter
-            i += 1
-        W[c, :] = w.T
-    return W
-
-
 test, W, H = read_strainm(['tests/test4.tsv'])
 
-bins, ids = perform_nmf(['tests/10_bins_kmer_counts.tsv'], k=30)
+bins, ids = perform_nmf(['tests/10_bins_kmer_counts.tsv'], k=10)
 bin_contigs(ids, 'tests/10_bins.fna')
 
-
-Xc, meanX = centre(test)
-Xw, whiteM = whiten(Xc)
-W = fastIca(Xw, alpha=1, iterations=500)
-unMixed = Xw.T.dot(W.T)
-unMixed = (unMixed.T - meanX).T
-
-plt.figure()
-# plt.plot(unMixed[0], 'ro', unMixed[1], 'bo')
-plt.subplot(3, 1, 1)
-plt.plot(test[:,-1], 'ro', test[:,-2], 'bo')
-
-plt.subplot(3, 1, 2)
-plt.plot(Xw[:,0], 'ro', Xw[:,1], 'bo')
-
-plt.subplot(3, 1, 3)
-plt.plot(unMixed[0], 'ro', unMixed[1], 'bo')
-
+covar, model = read_covar('tests/covar_test.csv', k=1000)
+plt.imshow(covar, cmap='hot', interpolation='nearest')
 plt.show()
-plt.savefig('strainm_unmixed.png')
+plt.savefig('covar.png')
 
-#
-# emc2_image = io.imread("tests/crossword.png", as_gray=True)
-# ica = FastICA(n_components=817)
-# ica.fit(emc2_image)
-#
-# # reconstruct image with independent components
-# emc2_image_ica = ica.fit_transform(emc2_image)
-# io.imshow(emc2_image_ica)
-# io.show()
-# emc2_restored = ica.inverse_transform(emc2_image_ica)
-# # io.figure()
-# # show image to screen
-# io.imshow(emc2_restored)
-# io.show()
