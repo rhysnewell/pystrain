@@ -1,6 +1,7 @@
 import pystrain.ival as ival
 from collections import OrderedDict
 import numpy as np
+from sklearn.preprocessing import scale, MinMaxScaler
 
 class contigEntry():
 
@@ -85,15 +86,23 @@ class contigStats():
         else:
             return False
 
-    def array(self, tranpose=True):
+    def array(self, tranpose=True, minmax=True):
         # colvals = np.array(list(self.contigs.values()))
         colvals = [0]*len(self.contigs)
         for idx, entry in enumerate(self.contigs.values()):
             colvals[idx] = entry.extract()
-
         colvals = np.array(colvals)
+        if minmax is True:
+            scaler = MinMaxScaler()
+            scaler.fit(colvals)
+            colvals = scaler.transform(colvals)
+        else:
+            colvals = scale(colvals, axis=0)
+
         if tranpose is True:
             colvals = colvals.T
+
+
         return colvals
 
 

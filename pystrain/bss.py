@@ -209,30 +209,30 @@ def bin_contigs(bin_dict, assembly_file):
                 fasta += seq.seq + '\n'
                 f.write(fasta)
 
-def perform_nmf_lorikeet(filename, k=10):
+def perform_nmf_lorikeet(filename, k=10, miter=10, rrange=range(2,20)):
     # array = [[] for i in filenames]
     contig_stats = contigStats(filename)
 
     # print(array)
     col_ids = list(contig_stats.contigs.keys())
     array = contig_stats.array()
-    lsnmf = nimfa.Lsnmf(array, seed='random_vcol', rank=k, max_iter=100, update='divergence',
+    nsnmf = nimfa.Nsnmf(array, seed='random_vcol', rank=k, max_iter=miter, update='divergence',
                 objective='div')
     # lsnmf = nimfa.SepNmf(array, seed='random_vcol', rank=k, n_run=10)
-    lsnmf_fit = lsnmf()
-    best_rank = lsnmf.estimate_rank(rank_range=range(3,20))
-    # for rank, values in best_rank.items():
-    #     print('Rank: %d' % rank)
-    #     print('Rss: %5.4f' % values['rss'])
-    #     print('Evar: %5.4f' % values['evar'])
-    #     print('K-L: %5.4f' % values['kl'])
+    nsnmf_fit = nsnmf()
+    best_rank = nsnmf.estimate_rank(rank_range=rrange)
+    for rank, values in best_rank.items():
+        print('Rank: %d' % rank)
+        print('Rss: %5.4f' % values['rss'])
+        print('Evar: %5.4f' % values['evar'])
+        print('K-L: %5.4f' % values['kl'])
     # print(best_rank)
-    print('Rss: %5.4f' % lsnmf_fit.fit.rss())
-    print('Evar: %5.4f' % lsnmf_fit.fit.evar())
-    print('K-L divergence: %5.4f' % lsnmf_fit.distance(metric='kl'))
-    print('Sparseness, W: %5.4f, H: %5.4f' % lsnmf_fit.fit.sparseness())
+    print('Rss: %5.4f' % nsnmf_fit.fit.rss())
+    print('Evar: %5.4f' % nsnmf_fit.fit.evar())
+    print('K-L divergence: %5.4f' % nsnmf_fit.distance(metric='kl'))
+    print('Sparseness, W: %5.4f, H: %5.4f' % nsnmf_fit.fit.sparseness())
 
-    predictions = lsnmf_fit.fit.predict(prob=True)
+    predictions = nsnmf_fit.fit.predict(prob=True)
     bins = np.array(predictions[0])[0]
     bin_dict = {}
     prob_idx = 0
@@ -243,11 +243,11 @@ def perform_nmf_lorikeet(filename, k=10):
             except KeyError:
                 bin_dict[bin_id] = [contig_name]
 
-    return lsnmf_fit, bin_dict
+    return nsnmf_fit, bin_dict, best_rank
 
 test, W, H = read_strainm(['tests/test4.tsv'])
 
-bins, ids = perform_nmf_lorikeet('tests/filt_lorikeet_contig_stats.tsv', k=2)
+bins, ids, best = perform_nmf_lorikeet('tests/filt_lorikeet_contig_stats.tsv', k=2)
 predictions = bins.fit.predict(prob=True)
 bin_contigs(ids, 'tests/10_bins.fna')
 
@@ -256,3 +256,16 @@ plt.imshow(covar, cmap='hot', interpolation='nearest')
 plt.show()
 plt.savefig('covar.png')
 
+anme = contigStats('tests/filt_lorikeet_contig_stats.tsv')
+colvals = [0]*len(anme)
+for idx, entry in enumerate(anme.contigs.values()):
+    colvals[idx] = entry.extract()
+colvals = np.array(colvals)
+# if minmax is True:
+scaler = MinMaxScaler()
+scaler.fit(colvals)
+colvals = scaler.transform(colvals)
+
+
+if tranpose is True:
+    colvals = colvals.T

@@ -1,5 +1,6 @@
 import pystrain.vcf as vcf
 import pystrain.fastaindex as fastaindex
+from pystrain.contig_stats import *
 import numpy as np
 import pandas as pd
 from scipy.cluster.hierarchy import dendrogram, linkage
@@ -71,9 +72,33 @@ values[:,2] = (values[:,2]-min(values[:,2]))/(max(values[:,2] - min(values[:,2])
 # clustering = AgglomerativeClustering(n_clusters=None, compute_full_tree=True, distance_threshold=0.01)
 # clustering.fit_predict(values[0:100])
 
+anme = contigStats('tests/filt_lorikeet_contig_stats.tsv')
+anme_array = anme.array()
+labels = list(anme.contigs.keys())
+plt.figure(figsize=(10, 7))
+plt.subplots_adjust(bottom=0.1)
+plt.scatter(anme_array[:,0], anme_array[:,1], label='True Position')
 
-clusters = hcluster.fclusterdata(values[0:40000], 0.01, criterion="distance")
-plt.scatter(*np.transpose(values[0:40000]), c=clusters)
+for label, x, y in zip(labels, anme_array[:, 0], anme_array[:, 1]):
+    plt.annotate(
+        label,
+        xy=(x, y), xytext=(-3, 3),
+        textcoords='offset points', ha='right', va='bottom')
+plt.savefig('contig_points.png')
+
+linked = hcluster.linkage(anme_array, 'single')
+plt.figure(figsize=(10,7))
+hcluster.dendrogram(linked,
+                    orientation='top',
+                labels=labels,
+            distance_sort='descending',
+            show_leaf_counts=True)
+
+plt.savefig('contig_dendro.png')
+
+
+clusters = hcluster.fclusterdata(anme_array, 0.01, criterion="distance")
+plt.scatter(*np.transpose(anme_array), c=clusters)
 plt.axis("equal")
 title = "threshold: %f, number of clusters: %d" % (0.01, len(set(clusters)))
 plt.title(title)
