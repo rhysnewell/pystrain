@@ -1,12 +1,7 @@
 import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib.pylab as plb
-from matplotlib import cm
-from scipy import signal
 from pylab import *
-from skimage import data, io, color
-# from skimage.viewer import ImageViewer
 from collections import OrderedDict
+from pystrain.contig_stats import *
 import nimfa
 import pyfaidx
 
@@ -75,41 +70,6 @@ def read_covar(filename, k=10):
 def run_lorikeet(filename):
     # array = [[] for i in filenames]
     array = {}
-    for (idx, filename) in enumerate(filenames):
-        with open(filename) as f:
-            for line in f:
-                if line.startswith('pos'):
-                    continue
-                else:
-                    line = line.strip().split()
-                    # hexdec = int('a'.join(line[1:5]) + 'a', 16)
-                    # depth = int(line[7])
-                    # abundances = [int(x)/depth for x in line[1:5]]
-                    try:
-                        # multi file
-                        # array[int(line[0])][i] = int(line[7])
-                        # single file
-                        # array[int(line[0])][idx] = [int(i) for i in line[1:7]]
-                        values = line[1:7]
-                        for i in range(6):
-                            try:
-                                array[i].append(int(values[i]))
-                            except KeyError:
-                                array[i] = []
-                                array[i].append(int(values[i]))
-
-
-                    except KeyError:
-                        # multi
-                        # array[int(line[0])] = [0]*len(filenames)
-                        # array[int(line[0])][i] = int(line[7])
-                        # single
-                        # array[int(line[0])] = [0]*7
-                        # if line[7] not in line[1:7]:
-                        array[int(line[0])] = [int(i)+1 for i in line[1:7]]
-                
-
-                    # array[i].append(hexdec)
 
     # print(array)
     array = np.array(list(array.values()))
@@ -249,11 +209,46 @@ def bin_contigs(bin_dict, assembly_file):
                 fasta += seq.seq + '\n'
                 f.write(fasta)
 
+def perform_nmf_lorikeet(filename, k=10):
+    # array = [[] for i in filenames]
+    contig_stats = contigStats(filename)
 
+    # print(array)
+    col_ids = list(contig_stats.contigs.keys())
+    array = contig_stats.array()
+    lsnmf = nimfa.Lsnmf(array, seed='random_vcol', rank=k, max_iter=100, update='divergence',
+                objective='div')
+    # lsnmf = nimfa.SepNmf(array, seed='random_vcol', rank=k, n_run=10)
+    lsnmf_fit = lsnmf()
+    best_rank = lsnmf.estimate_rank(rank_range=range(3,20))
+    # for rank, values in best_rank.items():
+    #     print('Rank: %d' % rank)
+    #     print('Rss: %5.4f' % values['rss'])
+    #     print('Evar: %5.4f' % values['evar'])
+    #     print('K-L: %5.4f' % values['kl'])
+    # print(best_rank)
+    print('Rss: %5.4f' % lsnmf_fit.fit.rss())
+    print('Evar: %5.4f' % lsnmf_fit.fit.evar())
+    print('K-L divergence: %5.4f' % lsnmf_fit.distance(metric='kl'))
+    print('Sparseness, W: %5.4f, H: %5.4f' % lsnmf_fit.fit.sparseness())
+
+    predictions = lsnmf_fit.fit.predict(prob=True)
+    bins = np.array(predictions[0])[0]
+    bin_dict = {}
+    prob_idx = 0
+    for (bin_id, contig_name) in zip(bins, col_ids):
+        if predictions[1][prob_idx] >= 0.5:
+            try:
+                bin_dict[bin_id].append(contig_name)
+            except KeyError:
+                bin_dict[bin_id] = [contig_name]
+
+    return lsnmf_fit, bin_dict
 
 test, W, H = read_strainm(['tests/test4.tsv'])
 
-bins, ids = perform_nmf(['tests/10_bins_kmer_counts.tsv'], k=10)
+bins, ids = perform_nmf_lorikeet('tests/filt_lorikeet_contig_stats.tsv', k=2)
+predictions = bins.fit.predict(prob=True)
 bin_contigs(ids, 'tests/10_bins.fna')
 
 covar, model = read_covar('tests/covar_test.csv', k=1000)
