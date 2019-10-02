@@ -1,21 +1,41 @@
 import pystrain.ival as ival
-
+from collections import OrderedDict
+import numpy as np
 
 class contigEntry():
 
     def __init__(self, fields):
         self.contigName = fields[0]
-        self.contigLen = fields[1]
-        self.totalAvgDepth = fields[2]
-        self.totalAvgGeno = fields[3]
+        self.contigLen = int(fields[1])
+        self.totalAvgDepth = float(fields[2])
+        self.totalAvgGeno = float(fields[3])
         self.sampleDepths = []
         self.sampleVars = []
         self.sampleGenos = []
         sampleFields = [fields[pos:pos+3] for pos in range(4, len(fields), 3)]
         for field in sampleFields:
-            self.sampleDepths.append(field[0])
-            self.sampleVars.append(field[1])
-            self.sampleGenos.append(field[2])
+            self.sampleDepths.append(float(field[0]))
+            self.sampleVars.append(float(field[1]))
+            self.sampleGenos.append(float(field[2]))
+
+    def __str__(self):
+        entry = "{}\t{}\t{}\t{}".format(self.contigName, self.contigLen, self.totalAvgDepth, self.totalAvgGeno)
+        values = ""
+        for c, v, g in zip(self.sampleDepths, self.sampleVars, self.sampleGenos):
+            values += "\t{}\t{}\t{}".format(c, v, g)
+
+        entry = entry + values
+        return entry
+
+    def extract(self):
+        entry = [self.contigLen, self.contigLen, self.totalAvgDepth, self.totalAvgGeno]
+        for c, v, g in zip(self.sampleDepths, self.sampleVars, self.sampleGenos):
+            entry.append(c)
+            entry.append(v)
+            entry.append(g)
+        return entry
+
+
 
 
 class contigStats():
@@ -28,21 +48,16 @@ class contigStats():
         if isinstance(entries, str):  # filename
             self.contigs = readstatsFile(entries)
         else:
-            self.contigs = dict()
+            self.contigs = OrderedDict()
             for entry in entries:
                 self.contigs[entry.contigName] = entry
 
     def __len__(self):
-        n = 0
-        for c in self.contigs:
-            n += len(self.contigs[c])
-        return n
+        return len(self.contigs)
 
     def generate(self, contig):
         entries = self.contigs.get(contig)
-        if entries != None:
-            for entry in entries:
-                yield entry
+        return entries
 
     def __iter__(self):
         self.contigqueue = ival.Stack()
@@ -69,6 +84,18 @@ class contigStats():
             else: return True
         else:
             return False
+
+    def array(self, tranpose=True):
+        # colvals = np.array(list(self.contigs.values()))
+        colvals = [0]*len(self.contigs)
+        for idx, entry in enumerate(self.contigs.values()):
+            colvals[idx] = entry.extract()
+
+        colvals = np.array(colvals)
+        if tranpose is True:
+            colvals = colvals.T
+        return colvals
+
 
 
 
