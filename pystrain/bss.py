@@ -201,10 +201,10 @@ def perform_nmf(filename, k=10):
     return lsnmf_fit, bin_dict
 
 
-def bin_contigs(bin_dict, assembly_file):
+def bin_contigs(bin_dict, assembly_file, output='bin.'):
     assembly = pyfaidx.Faidx(assembly_file)
     for (bin, contigs) in bin_dict.items():
-        with open('bin.'+str(bin)+'.fna', 'w') as f:
+        with open(output+str(bin)+'.fna', 'w') as f:
             for contig in contigs:
                 seq = assembly.fetch(contig, 1, assembly.index[contig].rlen)
                 fasta = ">" + seq.name + '\n'
@@ -280,17 +280,35 @@ def plot_clusters(data, algorithm, args, kwds):
     # plt.text(-0.5, 0.7, 'Clustering took {:.2f} s'.format(end_time - start_time), fontsize=14)
     return bin_dict, bins
 
-test, W, H = read_strainm(['tests/test4.tsv'])
+# test, W, H = read_strainm(['tests/test4.tsv'])
 
-bins, ids, best = perform_nmf_lorikeet('tests/filt_lorikeet_contig_stats.tsv', k=14)
-predictions = bins.fit.predict(prob=True)
-bin_contigs(ids, 'tests/10_bins.fna')
-
-covar, model = read_covar('tests/covar_test.csv', k=1000)
-plt.imshow(covar, cmap='hot', interpolation='nearest')
-plt.show()
-plt.savefig('covar.png')
+# bins, ids, best = perform_nmf_lorikeet('tests/filt_lorikeet_contig_stats.tsv', k=14)
+# predictions = bins.fit.predict(prob=True)
+# bin_contigs(ids, 'tests/10_bins.fna')
+#
+# covar, model = read_covar('tests/covar_test.csv', k=1000)
+# plt.imshow(covar, cmap='hot', interpolation='nearest')
+# plt.show()
+# plt.savefig('covar.png')
 
 data = contigStats('tests/filt_lorikeet_contig_stats.tsv')
 
 affinity_bins, res = plot_clusters(data, cluster.AffinityPropagation, (), {'preference':-5.0, 'damping':0.95})
+bin_contigs(affinity_bins, "filtrate_all_scaff.fasta", "affinity_")
+
+kmeans_bins, res = plot_clusters(data, cluster.KMeans, (), {'n_clusters':14})
+bin_contigs(kmeans_bins, "filtrate_all_scaff.fasta", "kmeans_")
+
+mean_shift, res = plot_clusters(data, cluster.MeanShift, (0.175,), {'cluster_all':False})
+bin_contigs(mean_shift, "filtrate_all_scaff.fasta", "meanshift_")
+
+spectral, res = plot_clusters(data, cluster.SpectralClustering, (), {'n_clusters':14})
+bin_contigs(spectral, "filtrate_all_scaff.fasta", "spectral_")
+
+agglomerative, res = plot_clusters(data, cluster.AgglomerativeClustering, (), {'n_clusters':14, 'linkage':'ward'})
+bin_contigs(agglomerative, "filtrate_all_scaff.fasta", "agglomerative_")
+
+dbscan, res = plot_clusters(data, cluster.DBSCAN, (), {'eps':0.025})
+bin_contigs(dbscan, "filtrate_all_scaff.fasta", "dbscan_")
+
+
