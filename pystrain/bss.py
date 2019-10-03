@@ -4,8 +4,10 @@ from collections import OrderedDict
 from pystrain.contig_stats import *
 import nimfa
 import pyfaidx
-
+import matplotlib.pyplot as plt
+import seaborn as sns
 from sklearn.decomposition import FastICA, PCA, NMF
+import sklearn.cluster as cluster
 # #############################################################################
 # Plot results
 
@@ -245,9 +247,42 @@ def perform_nmf_lorikeet(filename, k=10, miter=10, rrange=range(2,20)):
 
     return nsnmf_fit, bin_dict, best_rank
 
+def plot_clusters(data, algorithm, args, kwds):
+    """
+
+    :param data: a contigstats object
+    :param algorithm: clustering algorithm of choice
+    :param args: algorithm arguments
+    :param kwds: algorithm keyword args
+    :return: contig bins dictionary
+    """
+    start_time = time.time()
+    col_ids = list(data.contigs.keys())
+    array = data.array(tranpose=False, minmax=False)
+    bins = algorithm(*args, **kwds).fit_predict(array)
+    bin_dict = {}
+    prob_idx = 0
+    for (bin_id, contig_name) in zip(bins, col_ids):
+        try:
+            bin_dict[bin_id].append(contig_name)
+        except KeyError:
+            bin_dict[bin_id] = [contig_name]
+
+    end_time = time.time()
+    print(end_time - start_time)
+    # palette = sns.color_palette('deep', np.unique(labels).max() + 1)
+    # colors = [palette[x] if x >= 0 else (0.0, 0.0, 0.0) for x in labels]
+    # plt.scatter(data.T[0], data.T[1], c=colors, **plot_kwds)
+    # frame = plt.gca()
+    # frame.axes.get_xaxis().set_visible(False)
+    # frame.axes.get_yaxis().set_visible(False)
+    # plt.title('Clusters found by {}'.format(str(algorithm.__name__)), fontsize=24)
+    # plt.text(-0.5, 0.7, 'Clustering took {:.2f} s'.format(end_time - start_time), fontsize=14)
+    return bin_dict, bins
+
 test, W, H = read_strainm(['tests/test4.tsv'])
 
-bins, ids, best = perform_nmf_lorikeet('tests/filt_lorikeet_contig_stats.tsv', k=2)
+bins, ids, best = perform_nmf_lorikeet('tests/filt_lorikeet_contig_stats.tsv', k=14)
 predictions = bins.fit.predict(prob=True)
 bin_contigs(ids, 'tests/10_bins.fna')
 
@@ -256,16 +291,6 @@ plt.imshow(covar, cmap='hot', interpolation='nearest')
 plt.show()
 plt.savefig('covar.png')
 
-anme = contigStats('tests/filt_lorikeet_contig_stats.tsv')
-colvals = [0]*len(anme)
-for idx, entry in enumerate(anme.contigs.values()):
-    colvals[idx] = entry.extract()
-colvals = np.array(colvals)
-# if minmax is True:
-scaler = MinMaxScaler()
-scaler.fit(colvals)
-colvals = scaler.transform(colvals)
+data = contigStats('tests/filt_lorikeet_contig_stats.tsv')
 
-
-if tranpose is True:
-    colvals = colvals.T
+affinity_bins, res = plot_clusters(data, cluster.AffinityPropagation, (), {'preference':-5.0, 'damping':0.95})
