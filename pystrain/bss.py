@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.decomposition import FastICA, PCA, NMF
 import sklearn.cluster as cluster
+import hdbscan
 # #############################################################################
 # Plot results
 
