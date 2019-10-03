@@ -29,7 +29,7 @@ class contigEntry():
         return entry
 
     def extract(self):
-        entry = [self.contigLen, self.contigLen, self.totalAvgDepth, self.totalAvgGeno]
+        entry = [self.contigLen, self.totalAvgDepth, self.totalAvgGeno]
         for c, v, g in zip(self.sampleDepths, self.sampleVars, self.sampleGenos):
             entry.append(c)
             entry.append(v)
@@ -86,20 +86,23 @@ class contigStats():
         else:
             return False
 
-    def array(self, tranpose=True, minmax=True):
+    def array(self, transpose=True, minmax=True):
         # colvals = np.array(list(self.contigs.values()))
         colvals = [0]*len(self.contigs)
         for idx, entry in enumerate(self.contigs.values()):
             colvals[idx] = entry.extract()
         colvals = np.array(colvals)
         if minmax is True:
-            scaler = MinMaxScaler()
+            scaler = MinMaxScaler(feature_range=(1,2))
             scaler.fit(colvals)
             colvals = scaler.transform(colvals)
+            colvals = np.nan_to_num(colvals)
+
         else:
             colvals = scale(colvals, axis=0)
+            colvals = np.nan_to_num(colvals)
 
-        if tranpose is True:
+        if transpose is True:
             colvals = colvals.T
 
 
