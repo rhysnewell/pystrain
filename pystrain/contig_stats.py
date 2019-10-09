@@ -86,11 +86,13 @@ class contigStats():
         else:
             return False
 
-    def array(self, transpose=True, minmax=True):
+    def array(self, transpose=True, minmax=True, minlength=1000):
         # colvals = np.array(list(self.contigs.values()))
-        colvals = [0]*len(self.contigs)
+        # colvals = [0]*len(self.contigs)
+        colvals = []
         for idx, entry in enumerate(self.contigs.values()):
-            colvals[idx] = entry.extract()
+            if entry.contigLen >= minlength:
+                colvals.append(entry.extract())
         colvals = np.array(colvals)
         if minmax is True:
             scaler = MinMaxScaler(feature_range=(1,2))
