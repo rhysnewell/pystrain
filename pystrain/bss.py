@@ -205,7 +205,7 @@ def perform_nmf(filename, k=10):
 def bin_contigs(bin_dict, assembly_file, output='bin.'):
     assembly = pyfaidx.Faidx(assembly_file)
     for (bin, contigs) in bin_dict.items():
-        with open(output+str(bin)+'.fna', 'w') as f:
+        with open(output+str(bin+2)+'.fna', 'w') as f:
             for contig in contigs:
                 seq = assembly.fetch(contig, 1, assembly.index[contig].rlen)
                 fasta = ">" + seq.name + '\n'
@@ -248,7 +248,7 @@ def perform_nmf_lorikeet(filename, k=10, miter=10, rrange=range(2,20)):
 
     return nsnmf_fit, bin_dict, best_rank
 
-def plot_clusters(data, algorithm, args, kwds, minlength=1500):
+def plot_clusters(data, algorithm, args, kwds, minlength=1000):
     """
 
     :param data: a contigstats object
@@ -294,17 +294,17 @@ def plot_clusters(data, algorithm, args, kwds, minlength=1500):
 
 data = contigStats('tests/filt_lorikeet_contig_stats.tsv')
 #
-affinity_bins, res = plot_clusters(data, cluster.AffinityPropagation, (), {'preference':-5.0, 'damping':0.95})
-bin_contigs(affinity_bins, "filtrate_all_scaff.fasta", "affinity_")
+# affinity_bins, res = plot_clusters(data, cluster.AffinityPropagation, (), {'preference':-5.0, 'damping':0.95})
+# bin_contigs(affinity_bins, "filtrate_all_scaff.fasta", "affinity_")
 #
 kmeans_bins, res = plot_clusters(data, cluster.KMeans, (), {'n_clusters':14})
 bin_contigs(kmeans_bins, "filtrate_all_scaff.fasta", "kmeans_")
 #
-mean_shift, res = plot_clusters(data, cluster.MeanShift, (0.175,), {'cluster_all':False})
-bin_contigs(mean_shift, "filtrate_all_scaff.fasta", "meanshift_")
+# mean_shift, res = plot_clusters(data, cluster.MeanShift, (0.175,), {'cluster_all':False})
+# bin_contigs(mean_shift, "filtrate_all_scaff.fasta", "meanshift_")
 #
-spectral, res = plot_clusters(data, cluster.SpectralClustering, (), {'n_clusters':14})
-bin_contigs(spectral, "filtrate_all_scaff.fasta", "spectral_")
+# spectral, res = plot_clusters(data, cluster.SpectralClustering, (), {'n_clusters':14})
+# bin_contigs(spectral, "filtrate_all_scaff.fasta", "spectral_")
 #
 agglomerative, res = plot_clusters(data, cluster.AgglomerativeClustering, (), {'n_clusters':14, 'linkage':'ward'})
 bin_contigs(agglomerative, "filtrate_all_scaff.fasta", "agglomerative_")
@@ -312,7 +312,7 @@ bin_contigs(agglomerative, "filtrate_all_scaff.fasta", "agglomerative_")
 dbscan, res = plot_clusters(data, cluster.DBSCAN, (), {'eps':0.025})
 bin_contigs(dbscan, "filtrate_all_scaff.fasta", "dbscan_")
 
-hdbscan, res = plot_clusters(data, hdbscan.HDBSCAN,  (), {'min_cluster_size':5})
-bin_contigs(hdbscan, "filtrate_all_scaff.fasta", "hdbscan_")
+hdb, res = plot_clusters(data, hdbscan.HDBSCAN,  (), {'min_cluster_size':2})
+bin_contigs(hdb, "filtrate_all_scaff.fasta", "hdbscan_")
 
 
