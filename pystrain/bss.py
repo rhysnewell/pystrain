@@ -248,7 +248,7 @@ def perform_nmf_lorikeet(filename, k=10, miter=10, rrange=range(2,20)):
 
     return nsnmf_fit, bin_dict, best_rank
 
-def plot_clusters(data, algorithm, args, kwds, minlength=1000):
+def plot_clusters(data, algorithm, args, kwds, minlength=500):
     """
 
     :param data: a contigstats object
@@ -312,7 +312,7 @@ bin_contigs(agglomerative, "filtrate_all_scaff.fasta", "agglomerative_")
 dbscan, res = plot_clusters(data, cluster.DBSCAN, (), {'eps':0.025})
 bin_contigs(dbscan, "filtrate_all_scaff.fasta", "dbscan_")
 
-hdb, res = plot_clusters(data, hdbscan.HDBSCAN,  (), {'min_cluster_size':2})
+hdb, res = plot_clusters(data, hdbscan.HDBSCAN,  (), {'min_cluster_size':10})
 bin_contigs(hdb, "filtrate_all_scaff.fasta", "hdbscan_")
 
 
